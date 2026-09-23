@@ -83,7 +83,7 @@ fn main() -> ! {
 
     // Render initial zeroed telemetry waiting for host daemon
     let mut current_packet = TelemetryPacket::new(0, 0, 0, 0, 0, 100);
-    dashboard.update(&mut display, current_packet);
+    dashboard.update(&mut display, &mut delay, current_packet);
 
     let _ = ufmt::uwriteln!(&mut serial, "GADGET_READY");
 
@@ -115,7 +115,7 @@ fn main() -> ! {
                     if rx_idx == PACKET_LEN {
                         if let Some(packet) = TelemetryPacket::decode(&rx_buf) {
                             current_packet = packet;
-                            dashboard.update(&mut display, current_packet);
+                            dashboard.update(&mut display, &mut delay, current_packet);
                             let _ = ufmt::uwriteln!(&mut serial, "ACK");
                         }
                         rx_idx = 0;

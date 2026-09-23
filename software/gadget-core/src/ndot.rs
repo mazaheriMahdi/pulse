@@ -57,7 +57,15 @@ pub fn draw_ndot_char<D: Display>(
             let is_on = ((row_bits >> (4 - col)) & 1) != 0;
             let cx = x + col * cell;
 
-            if cell == 9 {
+            if cell == 11 {
+                // Giant 11×11 cell with smooth 9px circular dot
+                display.fill_rect(cx, cy, 11, 11, bg);
+                if is_on {
+                    display.fill_rect(cx + 3, cy + 1, 5, 1, fg);
+                    display.fill_rect(cx + 1, cy + 2, 9, 7, fg);
+                    display.fill_rect(cx + 3, cy + 9, 5, 1, fg);
+                }
+            } else if cell == 9 {
                 // Big 9×9 cell with smooth 7px circular dot
                 display.fill_rect(cx, cy, 9, 9, bg);
                 if is_on {
@@ -128,4 +136,13 @@ pub fn draw_dot_circle_6px<D: Display>(display: &mut D, x: u16, y: u16, color: C
     display.fill_rect(x + 1, y, 4, 1, color);
     display.fill_rect(x, y + 1, 6, 4, color);
     display.fill_rect(x + 1, y + 5, 4, 1, color);
+}
+
+/// Draws a smooth circular dot of diameter 7px.
+pub fn draw_dot_circle_7px<D: Display>(display: &mut D, x: u16, y: u16, color: Color) {
+    display.fill_rect(x + 2, y, 3, 1, color);
+    display.fill_rect(x + 1, y + 1, 5, 1, color);
+    display.fill_rect(x, y + 2, 7, 3, color);
+    display.fill_rect(x + 1, y + 5, 5, 1, color);
+    display.fill_rect(x + 2, y + 6, 3, 1, color);
 }

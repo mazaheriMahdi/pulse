@@ -27,6 +27,11 @@ pub trait DelayMs {
     fn delay_ms(&mut self, ms: u16);
 }
 
+impl DelayMs for () {
+    #[inline(always)]
+    fn delay_ms(&mut self, _ms: u16) {}
+}
+
 use crate::display::{Color, Ili9488, HEIGHT, WIDTH};
 
 /// Platform-agnostic display drawing trait.

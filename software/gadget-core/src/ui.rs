@@ -2,16 +2,17 @@
 //!
 //! Exact implementation of the Nothing OS design language:
 //! - Pure black canvas (#000000)
-//! - Dot-matrix (NDot-inspired) numerals with smooth circular dots
-//! - 24-dot Glyph indicators for load
+//! - Giant 77px tall 5×7 NDot numerals with 9px circular dots
+//! - Low-positioned 24-dot Glyph progress bars with chunky 7px circular dots
+//! - Smooth parallel filling/draining animation on load changes
 //! - Hairline rules (#262626), near-zero radius
 //! - Nothing red (#D71921) reserved for warnings and top status indicator
 //! - Dual-panel layout: CPU on left, GPU on right
 
 use crate::display::Color;
 use crate::font::draw_ascii;
-use crate::ndot::{draw_dot_circle_5px, draw_dot_circle_6px, draw_ndot_char, draw_ndot_str};
-use crate::traits::Display;
+use crate::ndot::{draw_dot_circle_6px, draw_dot_circle_7px, draw_ndot_char, draw_ndot_str};
+use crate::traits::{DelayMs, Display};
 use gadget_common::TelemetryPacket;
 
 // ── Palette (Nothing Design Language) ─────────────────────────────────────────
@@ -44,13 +45,13 @@ const CPU_IW: u16 = 204;
 const GPU_IX: u16 = 253;
 const GPU_IW: u16 = 203;
 
-// Internal vertical offsets inside panels
-const HEAD_Y: u16 = 59;
-const VAL_Y: u16 = 90;
-const BAR_Y: u16 = 166;
-const TRULE_Y: u16 = 216;
-const TLBL_Y: u16 = 227;
-const TVAL_Y: u16 = 242;
+// Internal vertical offsets inside panels (balanced, zero empty gap)
+const HEAD_Y: u16 = 56;
+const VAL_Y: u16 = 82;     // cell = 11 -> 77px tall numerals (82..159)
+const BAR_Y: u16 = 186;    // moved lower, 7px dots (186..193)
+const TRULE_Y: u16 = 216;  // hairline rule
+const TLBL_Y: u16 = 227;   // TEMP label
+const TVAL_Y: u16 = 242;   // cell = 7 -> 49px tall temperature (242..291)
 
 const BAR_DOTS: usize = 24;
 
@@ -63,6 +64,8 @@ pub struct Dashboard {
     prev_gpu_val: u8,
     prev_cpu_temp: u8,
     prev_gpu_temp: u8,
+    curr_cpu_dots: u8,
+    curr_gpu_dots: u8,
 }
 
 impl Dashboard {
@@ -75,6 +78,8 @@ impl Dashboard {
             prev_gpu_val: 255,
             prev_cpu_temp: 255,
             prev_gpu_temp: 255,
+            curr_cpu_dots: 0,
+            curr_gpu_dots: 0,
         }
     }
 
@@ -103,7 +108,7 @@ impl Dashboard {
         // 6. CPU Panel Shell
         draw_ndot_str(display, CPU_IX, HEAD_Y, b"CPU", 3, TEXT_WHITE, BG);
         draw_ascii(display, CPU_IX + CPU_IW - 44, HEAD_Y + 7, b"4.2 GHZ", DIM, BG, 1);
-        draw_ascii(display, CPU_IX + 107, VAL_Y + 46, b"%", DIM, BG, 2);
+        draw_ascii(display, CPU_IX + 129, VAL_Y + 56, b"%", DIM, BG, 3);
 
         display.draw_hline(CPU_IX, TRULE_Y, CPU_IW, LINE);
         draw_ascii(display, CPU_IX, TLBL_Y, b"T  E  M  P", DIM, BG, 1);
@@ -111,20 +116,30 @@ impl Dashboard {
         // 7. GPU Panel Shell
         draw_ndot_str(display, GPU_IX, HEAD_Y, b"GPU", 3, TEXT_WHITE, BG);
         draw_ascii(display, GPU_IX + GPU_IW - 34, HEAD_Y + 7, b"185 W", DIM, BG, 1);
-        draw_ascii(display, GPU_IX + 107, VAL_Y + 46, b"%", DIM, BG, 2);
+        draw_ascii(display, GPU_IX + 129, VAL_Y + 56, b"%", DIM, BG, 3);
 
         display.draw_hline(GPU_IX, TRULE_Y, GPU_IW, LINE);
         draw_ascii(display, GPU_IX, TLBL_Y, b"T  E  M  P", DIM, BG, 1);
 
         // Initial unlit 24-dot bars
-        self.draw_bar_dots(display, CPU_IX, CPU_IW, 0, false);
-        self.draw_bar_dots(display, GPU_IX, GPU_IW, 0, false);
+        for i in 0..BAR_DOTS {
+            let cx = CPU_IX + ((i as u32 * (CPU_IW as u32 - 7)) / (BAR_DOTS as u32 - 1)) as u16;
+            draw_dot_circle_7px(display, cx, BAR_Y, DOT_OFF);
+
+            let gx = GPU_IX + ((i as u32 * (GPU_IW as u32 - 7)) / (BAR_DOTS as u32 - 1)) as u16;
+            draw_dot_circle_7px(display, gx, BAR_Y, DOT_OFF);
+        }
 
         self.initialized = true;
     }
 
-    /// Differential update: only redraws dynamic metrics that changed.
-    pub fn update<D: Display>(&mut self, display: &mut D, packet: TelemetryPacket) {
+    /// Differential update: redraws dynamic metrics and animates progress bars filling/draining.
+    pub fn update<D: Display, DELAY: DelayMs>(
+        &mut self,
+        display: &mut D,
+        delay: &mut DELAY,
+        packet: TelemetryPacket,
+    ) {
         if !self.initialized {
             self.draw_layout(display);
         }
@@ -132,33 +147,24 @@ impl Dashboard {
         self.tick = (self.tick + 1) % 5;
         self.draw_glyph_strip(display);
 
-        // ── CPU Panel ─────────────────────────────────────────────────────────
         let cpu_hot = packet.cpu_temp_c >= 80;
-        let prev_cpu_hot = self.prev_cpu_temp >= 80;
+        let gpu_hot = packet.gpu_temp_c >= 80;
 
+        // ── Big Numerals (cell = 11, 77px tall) ──────────────────────────────
         if packet.cpu_percent != self.prev_cpu_val {
             self.draw_big_val(display, CPU_IX, packet.cpu_percent);
-            self.draw_bar_dots(display, CPU_IX, CPU_IW, packet.cpu_percent, cpu_hot);
             self.prev_cpu_val = packet.cpu_percent;
-        } else if cpu_hot != prev_cpu_hot {
-            self.draw_bar_dots(display, CPU_IX, CPU_IW, packet.cpu_percent, cpu_hot);
         }
-
-        if packet.cpu_temp_c != self.prev_cpu_temp {
-            self.draw_temp_val(display, CPU_IX, packet.cpu_temp_c, cpu_hot);
-            self.prev_cpu_temp = packet.cpu_temp_c;
-        }
-
-        // ── GPU Panel ─────────────────────────────────────────────────────────
-        let gpu_hot = packet.gpu_temp_c >= 80;
-        let prev_gpu_hot = self.prev_gpu_temp >= 80;
 
         if packet.gpu_percent != self.prev_gpu_val {
             self.draw_big_val(display, GPU_IX, packet.gpu_percent);
-            self.draw_bar_dots(display, GPU_IX, GPU_IW, packet.gpu_percent, gpu_hot);
             self.prev_gpu_val = packet.gpu_percent;
-        } else if gpu_hot != prev_gpu_hot {
-            self.draw_bar_dots(display, GPU_IX, GPU_IW, packet.gpu_percent, gpu_hot);
+        }
+
+        // ── Temperature Readouts ──────────────────────────────────────────────
+        if packet.cpu_temp_c != self.prev_cpu_temp {
+            self.draw_temp_val(display, CPU_IX, packet.cpu_temp_c, cpu_hot);
+            self.prev_cpu_temp = packet.cpu_temp_c;
         }
 
         if packet.gpu_temp_c != self.prev_gpu_temp {
@@ -166,43 +172,63 @@ impl Dashboard {
             self.prev_gpu_temp = packet.gpu_temp_c;
         }
 
+        // ── Animated Progress Bars (Chunky 7px Dots) ──────────────────────────
+        let target_cpu = ((packet.cpu_percent.min(100) as u32 * BAR_DOTS as u32 + 50) / 100) as u8;
+        let target_gpu = ((packet.gpu_percent.min(100) as u32 * BAR_DOTS as u32 + 50) / 100) as u8;
+
+        let cpu_on_col = if cpu_hot { RED } else { TEXT_WHITE };
+        let gpu_on_col = if gpu_hot { RED } else { TEXT_WHITE };
+
+        // Animate both bars in lockstep
+        while self.curr_cpu_dots != target_cpu || self.curr_gpu_dots != target_gpu {
+            if self.curr_cpu_dots < target_cpu {
+                let dx = CPU_IX + ((self.curr_cpu_dots as u32 * (CPU_IW as u32 - 7)) / (BAR_DOTS as u32 - 1)) as u16;
+                draw_dot_circle_7px(display, dx, BAR_Y, cpu_on_col);
+                self.curr_cpu_dots += 1;
+            } else if self.curr_cpu_dots > target_cpu {
+                self.curr_cpu_dots -= 1;
+                let dx = CPU_IX + ((self.curr_cpu_dots as u32 * (CPU_IW as u32 - 7)) / (BAR_DOTS as u32 - 1)) as u16;
+                draw_dot_circle_7px(display, dx, BAR_Y, DOT_OFF);
+            }
+
+            if self.curr_gpu_dots < target_gpu {
+                let dx = GPU_IX + ((self.curr_gpu_dots as u32 * (GPU_IW as u32 - 7)) / (BAR_DOTS as u32 - 1)) as u16;
+                draw_dot_circle_7px(display, dx, BAR_Y, gpu_on_col);
+                self.curr_gpu_dots += 1;
+            } else if self.curr_gpu_dots > target_gpu {
+                self.curr_gpu_dots -= 1;
+                let dx = GPU_IX + ((self.curr_gpu_dots as u32 * (GPU_IW as u32 - 7)) / (BAR_DOTS as u32 - 1)) as u16;
+                draw_dot_circle_7px(display, dx, BAR_Y, DOT_OFF);
+            }
+
+            delay.delay_ms(10);
+        }
+
         self.last = Some(packet);
     }
 
     // ── Metric Renderers ──────────────────────────────────────────────────────
 
-    /// Draws huge 5×7 dot-matrix load numeral (cell = 9, 63px tall).
+    /// Draws giant 5×7 dot-matrix load numeral (cell = 11, 77px tall, 9px dots).
     fn draw_big_val<D: Display>(&self, display: &mut D, ix: u16, val: u8) {
         let val = val.min(100);
         let d0 = (val / 10) % 10 + b'0';
         let d1 = val % 10 + b'0';
 
         if val >= 100 {
-            draw_ndot_char(display, ix, VAL_Y, b'1', 9, TEXT_WHITE, BG);
-            draw_ndot_char(display, ix + 54, VAL_Y, b'0', 9, TEXT_WHITE, BG);
+            draw_ndot_char(display, ix, VAL_Y, b'1', 11, TEXT_WHITE, BG);
+            draw_ndot_char(display, ix + 66, VAL_Y, b'0', 11, TEXT_WHITE, BG);
         } else if val < 10 {
-            // Leading space
-            display.fill_rect(ix, VAL_Y, 54, 63, BG);
-            draw_ndot_char(display, ix + 54, VAL_Y, d1, 9, TEXT_WHITE, BG);
+            // Clear first digit slot cleanly
+            display.fill_rect(ix, VAL_Y, 66, 77, BG);
+            draw_ndot_char(display, ix + 66, VAL_Y, d1, 11, TEXT_WHITE, BG);
         } else {
-            draw_ndot_char(display, ix, VAL_Y, d0, 9, TEXT_WHITE, BG);
-            draw_ndot_char(display, ix + 54, VAL_Y, d1, 9, TEXT_WHITE, BG);
+            draw_ndot_char(display, ix, VAL_Y, d0, 11, TEXT_WHITE, BG);
+            draw_ndot_char(display, ix + 66, VAL_Y, d1, 11, TEXT_WHITE, BG);
         }
     }
 
-    /// Draws 24 circular dots in a horizontal row.
-    fn draw_bar_dots<D: Display>(&self, display: &mut D, ix: u16, iw: u16, val: u8, hot: bool) {
-        let lit_count = ((val.min(100) as u32 * BAR_DOTS as u32 + 50) / 100) as usize;
-        let on_color = if hot { RED } else { TEXT_WHITE };
-
-        for i in 0..BAR_DOTS {
-            let dx = ix + ((i as u32 * (iw as u32 - 5)) / (BAR_DOTS as u32 - 1)) as u16;
-            let col = if i < lit_count { on_color } else { DOT_OFF };
-            draw_dot_circle_5px(display, dx, BAR_Y, col);
-        }
-    }
-
-    /// Draws temperature in 5×7 dot-matrix (cell = 7, 49px tall).
+    /// Draws temperature in 5×7 dot-matrix (cell = 7, 49px tall, 5px dots).
     fn draw_temp_val<D: Display>(&self, display: &mut D, ix: u16, temp: u8, hot: bool) {
         let col = if hot { RED } else { TEXT_WHITE };
         let t = temp.min(99);
