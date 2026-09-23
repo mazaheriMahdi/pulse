@@ -61,17 +61,19 @@ pub fn draw_ndot_char<D: Display>(
                 // Giant 11×11 cell with smooth 9px circular dot
                 display.fill_rect(cx, cy, 11, 11, bg);
                 if is_on {
-                    display.fill_rect(cx + 3, cy + 1, 5, 1, fg);
-                    display.fill_rect(cx + 1, cy + 2, 9, 7, fg);
-                    display.fill_rect(cx + 3, cy + 9, 5, 1, fg);
+                    display.fill_rect(cx + 4, cy + 1, 3, 1, fg);
+                    display.fill_rect(cx + 2, cy + 2, 7, 2, fg);
+                    display.fill_rect(cx + 1, cy + 4, 9, 3, fg);
+                    display.fill_rect(cx + 2, cy + 7, 7, 2, fg);
+                    display.fill_rect(cx + 4, cy + 9, 3, 1, fg);
                 }
             } else if cell == 9 {
                 // Big 9×9 cell with smooth 7px circular dot
                 display.fill_rect(cx, cy, 9, 9, bg);
                 if is_on {
-                    display.fill_rect(cx + 2, cy + 1, 5, 1, fg);
+                    display.fill_rect(cx + 3, cy + 1, 3, 1, fg);
                     display.fill_rect(cx + 1, cy + 2, 7, 5, fg);
-                    display.fill_rect(cx + 2, cy + 7, 5, 1, fg);
+                    display.fill_rect(cx + 3, cy + 7, 3, 1, fg);
                 }
             } else if cell == 7 {
                 // Medium 7×7 cell with smooth 5px circular dot
@@ -80,6 +82,14 @@ pub fn draw_ndot_char<D: Display>(
                     display.fill_rect(cx + 2, cy + 1, 3, 1, fg);
                     display.fill_rect(cx + 1, cy + 2, 5, 3, fg);
                     display.fill_rect(cx + 2, cy + 5, 3, 1, fg);
+                }
+            } else if cell == 4 {
+                // 4×4 cell with 4px circular dot
+                display.fill_rect(cx, cy, 4, 4, bg);
+                if is_on {
+                    display.fill_rect(cx + 1, cy, 2, 1, fg);
+                    display.fill_rect(cx, cy + 1, 4, 2, fg);
+                    display.fill_rect(cx + 1, cy + 3, 2, 1, fg);
                 }
             } else if cell == 3 {
                 // Small 3×3 cell with 2×2 dot

@@ -209,7 +209,7 @@ impl Dashboard {
 
     /// Draws giant 5×7 dot-matrix load numeral (cell = 11, 77px tall, 9px dots).
     /// Strictly left-aligned at `ix` regardless of whether value is 1, 2, or 3 digits.
-    /// The `%` symbol dynamically hugs the right side of the final digit with a 6px gap.
+    /// Wipes the entire right-hand area cleanly so zero leftover artifacts from previous digits remain.
     fn draw_big_val<D: Display>(&self, display: &mut D, ix: u16, val: u8) {
         let val = val.min(100);
         let pct_y = VAL_Y + 56;
@@ -222,26 +222,23 @@ impl Dashboard {
             display.fill_rect(ix + 116, VAL_Y, 6, 77, BG);
             draw_ndot_char(display, ix + 122, VAL_Y, b'0', 11, TEXT_WHITE, BG);
 
-            let pct_x = ix + 122 + 55 + 6;
-            draw_ascii(display, pct_x, pct_y, b"%", DIM, BG, 3);
-            let clear_x = pct_x + 18;
-            if clear_x < ix + CPU_IW {
-                display.fill_rect(clear_x, VAL_Y, (ix + CPU_IW) - clear_x, 77, BG);
+            // Clean right area beyond 3rd digit
+            let tail_x = ix + 122 + 55;
+            if tail_x < ix + CPU_IW {
+                display.fill_rect(tail_x, VAL_Y, (ix + CPU_IW) - tail_x, 77, BG);
             }
+            draw_ascii(display, tail_x + 6, pct_y, b"%", DIM, BG, 3);
         } else if val < 10 {
             // Single digit: strictly left-aligned at `ix`!
             let d = val + b'0';
             draw_ndot_char(display, ix, VAL_Y, d, 11, TEXT_WHITE, BG);
 
-            // '%' follows immediately after the single digit
+            // Wipe ENTIRE area to the right of digit 1 (wipes all traces of previous 2nd digit and old %)
+            display.fill_rect(ix + 55, VAL_Y, CPU_IW - 55, 77, BG);
+
+            // Draw '%' cleanly after the single digit
             let pct_x = ix + 55 + 6;
             draw_ascii(display, pct_x, pct_y, b"%", DIM, BG, 3);
-
-            // Clean up any trailing pixels where previous 2nd digit or % was
-            let clear_x = pct_x + 18;
-            if clear_x < ix + CPU_IW {
-                display.fill_rect(clear_x, VAL_Y, (ix + CPU_IW) - clear_x, 77, BG);
-            }
         } else {
             // Two digits: strictly left-aligned at `ix`!
             let d0 = (val / 10) + b'0';
@@ -250,15 +247,15 @@ impl Dashboard {
             display.fill_rect(ix + 55, VAL_Y, 11, 77, BG);
             draw_ndot_char(display, ix + 66, VAL_Y, d1, 11, TEXT_WHITE, BG);
 
-            // '%' follows immediately after the 2nd digit
-            let pct_x = ix + 121 + 6;
-            draw_ascii(display, pct_x, pct_y, b"%", DIM, BG, 3);
-
-            // Clean up any trailing pixels beyond %
-            let clear_x = pct_x + 18;
-            if clear_x < ix + CPU_IW {
-                display.fill_rect(clear_x, VAL_Y, (ix + CPU_IW) - clear_x, 77, BG);
+            // Wipe ENTIRE area to the right of digit 2 (wipes any old 3rd digit or previous % positions)
+            let tail_x = ix + 121;
+            if tail_x < ix + CPU_IW {
+                display.fill_rect(tail_x, VAL_Y, (ix + CPU_IW) - tail_x, 77, BG);
             }
+
+            // Draw '%' cleanly after digit 2
+            let pct_x = tail_x + 6;
+            draw_ascii(display, pct_x, pct_y, b"%", DIM, BG, 3);
         }
     }
 
