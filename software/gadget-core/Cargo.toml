@@ -1,0 +1,10 @@
+[package]
+name = "gadget-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gadget-common = { path = "../gadget-common" }
+
+[features]
+default = []

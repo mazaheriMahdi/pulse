@@ -1,0 +1,23 @@
+# Rust build artifacts
+target/
+**/target/
+
+# IDE & editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python cache & test artifacts
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Logs & temp files
+*.log
+**/*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db

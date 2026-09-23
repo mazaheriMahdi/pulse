@@ -1,0 +1,10 @@
+[package]
+name = "gadget-host"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gadget-common = { path = "../gadget-common" }
+serialport = "4.7"
+clap = { version = "4.5", features = ["derive"] }
+
