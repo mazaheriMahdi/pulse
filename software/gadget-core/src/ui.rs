@@ -88,10 +88,7 @@ impl Dashboard {
         // 1. Pure black canvas
         display.fill_rect(0, 0, 480, 320, BG);
 
-        // 2. Outer hairline screen border (1px)
-        display.draw_rect(0, 0, 480, 320, LINE);
-
-        // 3. Top bar: "PULSE" wordmark + Nothing red dot
+        // 2. Top bar: "PULSE" wordmark + Nothing red dot
         draw_ndot_str(display, CONTENT_X0, TOPBAR_Y, b"PULSE", 2, TEXT_WHITE, BG);
         // Red dot: 6px diameter circle next to PULSE
         draw_dot_circle_6px(display, CONTENT_X0 + 64, TOPBAR_Y + 4, RED);
