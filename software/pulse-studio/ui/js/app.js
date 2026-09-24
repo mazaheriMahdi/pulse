@@ -19,55 +19,68 @@ import {
 
 // DOM Element References
 const screenEl = document.getElementById('screen');
-const previewAreaEl = document.getElementById('preview-area');
-const facesGridEl = document.getElementById('faces-grid');
-const flashBtn = document.getElementById('flash-btn');
-const flashStatusEl = document.getElementById('flash-status');
-const connPillEl = document.getElementById('conn-pill');
-const connStatusText = document.getElementById('conn-status-text');
-const brightnessSlider = document.getElementById('brightness-slider');
-const brightnessValEl = document.getElementById('brightness-val');
+const previewAreaEl = document.getElementById('previewArea');
+const faceGridEl = document.getElementById('faceGrid');
+const connPill = document.getElementById('connPill');
+const connText = document.getElementById('connText');
+const streamRate = document.getElementById('streamRate');
+const previewName = document.getElementById('previewName');
+const setName = document.getElementById('setName');
+const brightnessSlider = document.getElementById('brightness');
+const brightnessVal = document.getElementById('brightnessVal');
+const saveBtn = document.getElementById('saveBtn');
+const loadBtn = document.getElementById('loadBtn');
+const flashBtn = document.getElementById('flashBtn');
+const flashFill = document.getElementById('flashFill');
+const flashLabel = document.getElementById('flashLabel');
+const sbStatus = document.getElementById('sbStatus');
 
 /**
  * Initializes the Face Library sidebar cards
  */
 function initFaceLibrary() {
-  if (!facesGridEl) return;
-  facesGridEl.innerHTML = '';
+  if (!faceGridEl) return;
+  faceGridEl.innerHTML = '';
 
   AVAILABLE_FACES.forEach((face) => {
     const card = document.createElement('div');
-    card.className = `face-card ${face.id === store.settings.face ? 'active' : ''}`;
-    card.dataset.faceId = face.id;
+    const isActive = face.id === store.settings.face;
+    card.className = `face ${isActive ? 'on' : ''}`;
+    card.dataset.id = face.id;
+    card.style.color = isActive ? store.settings.accent : '#5a5a5a';
 
     card.innerHTML = `
-      <div class="thumb-frame" id="thumb-${face.id}">
+      <div class="thumb" id="thumb-${face.id}">
         ${renderThumbnail(face.id, store.settings.accent)}
       </div>
-      <div class="card-meta">
-        <span class="face-name">${face.name}</span>
-        <span class="face-tag">${face.short}</span>
-      </div>
+      <div class="fname">${face.name}</div>
     `;
 
     card.addEventListener('click', () => {
       store.updateSettings({ face: face.id });
+      updateFaceHeaderNames();
     });
 
-    facesGridEl.appendChild(card);
+    faceGridEl.appendChild(card);
   });
+}
+
+function updateFaceHeaderNames() {
+  const current = AVAILABLE_FACES.find((f) => f.id === store.settings.face);
+  if (current) {
+    if (previewName) previewName.textContent = current.name;
+    if (setName) setName.textContent = current.name;
+  }
 }
 
 /**
  * Updates sidebar thumbnail selection states
  */
 function updateThumbnailSelection() {
-  document.querySelectorAll('.face-card').forEach((card) => {
-    if (card.dataset.faceId === store.settings.face) {
-      card.classList.add('active');
-    } else {
-      card.classList.remove('active');
-    }
+  document.querySelectorAll('.face').forEach((card) => {
+    const isActive = card.dataset.id === store.settings.face;
+    card.classList.toggle('on', isActive);
+    card.style.color = isActive ? store.settings.accent : '#5a5a5a';
   });
 }
 
@@ -91,6 +104,7 @@ function renderScreen() {
 
   // Update accent color CSS variable
   screenEl.style.setProperty('--acc', store.settings.accent);
+  screenEl.style.color = store.settings.accent;
 
   // Invert class
   if (store.settings.invert) {
@@ -100,7 +114,11 @@ function renderScreen() {
   }
 
   // Render active face layout
-  screenEl.innerHTML = renderFace(store.settings.face, store.settings.label !== false ? store.settings : { ...store.settings, label: false }, store.telemetry);
+  screenEl.innerHTML = renderFace(
+    store.settings.face,
+    store.settings.label !== false ? store.settings : { ...store.settings, label: false },
+    store.telemetry
+  );
 }
 
 /**
@@ -111,15 +129,15 @@ function initResponsiveScaler() {
 
   const updateScale = () => {
     const rect = previewAreaEl.getBoundingClientRect();
-    const padX = 48; // padding buffer
-    const padY = 48;
-    const availW = Math.max(200, rect.width - padX);
-    const availH = Math.max(160, rect.height - padY);
+    const padX = 40;
+    const padY = 40;
+    const availW = Math.max(180, rect.width - padX);
+    const availH = Math.max(120, rect.height - padY);
 
     const scaleX = availW / 480;
     const scaleY = availH / 320;
     const scale = Math.min(scaleX, scaleY);
-    const clampedScale = Math.min(2.0, Math.max(0.45, scale));
+    const clampedScale = Math.min(1.8, Math.max(0.4, scale));
 
     previewAreaEl.style.setProperty('--preview-scale', clampedScale.toFixed(3));
   };
@@ -136,64 +154,67 @@ function initResponsiveScaler() {
  */
 function initControls() {
   // Color Swatches
-  document.querySelectorAll('.swatch-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const color = btn.dataset.color;
-      document.querySelectorAll('.swatch-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
+  document.querySelectorAll('.sw').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      const color = sw.dataset.c;
+      document.querySelectorAll('.sw').forEach((s) => s.classList.remove('on'));
+      sw.classList.add('on');
       store.updateSettings({ accent: color });
       updateThumbnailsAccent();
     });
   });
 
   // Refresh Rate Segmented Control
-  document.querySelectorAll('[data-refresh]').forEach((btn) => {
+  document.querySelectorAll('#refreshSeg button').forEach((btn) => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-refresh]').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      store.updateSettings({ refresh: parseInt(btn.dataset.refresh, 10) });
+      document.querySelectorAll('#refreshSeg button').forEach((b) => b.classList.remove('on'));
+      btn.classList.add('on');
+      const hz = parseInt(btn.dataset.v, 10);
+      store.updateSettings({ refresh: hz });
+      if (streamRate) streamRate.textContent = `STREAMING · ${hz} HZ`;
     });
   });
 
   // Brightness Slider
   if (brightnessSlider) {
-    brightnessSlider.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      if (brightnessValEl) brightnessValEl.textContent = `${val}%`;
+    brightnessSlider.addEventListener('input', () => {
+      const val = parseInt(brightnessSlider.value, 10);
+      if (brightnessVal) brightnessVal.textContent = `${val}%`;
+      if (screenEl) screenEl.style.filter = `brightness(${0.45 + val / 160})`;
       store.updateSettings({ brightness: val });
     });
   }
 
-  // Toggles / Flags
-  const bindToggle = (id, prop) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('change', (e) => {
-        store.updateSettings({ [prop]: e.target.checked });
-      });
-    }
-  };
-
-  bindToggle('opt-label', 'label');
-  bindToggle('opt-temp', 'temp');
-  bindToggle('opt-units', 'units');
-  bindToggle('opt-invert', 'invert');
-  bindToggle('opt-auto', 'auto');
+  // Toggles / Flags (Nothing style switches)
+  document.querySelectorAll('.toggle').forEach((t) => {
+    t.addEventListener('click', () => {
+      const k = t.dataset.k;
+      const newVal = !store.settings[k];
+      store.updateSettings({ [k]: newVal });
+      t.classList.toggle('on', newVal);
+    });
+  });
 
   // Window Controls
-  const minBtn = document.getElementById('win-min');
-  const maxBtn = document.getElementById('win-max');
-  const closeBtn = document.getElementById('win-close');
+  const minBtn = document.getElementById('btnMin');
+  const maxBtn = document.getElementById('btnMax');
+  const closeBtn = document.getElementById('btnClose');
 
   if (minBtn) minBtn.addEventListener('click', () => windowMinimize());
   if (maxBtn) maxBtn.addEventListener('click', () => windowMaximize());
   if (closeBtn) closeBtn.addEventListener('click', () => windowClose());
 
-  // Flash Button
+  // Flash Button (Serial IPC)
+  let flashing = false;
   if (flashBtn) {
     flashBtn.addEventListener('click', async () => {
-      flashBtn.classList.add('flashing');
-      if (flashStatusEl) flashStatusEl.textContent = 'FLASHING TO GADGET...';
+      if (flashing) return;
+      flashing = true;
+
+      flashBtn.disabled = true;
+      flashBtn.classList.add('busy');
+      if (flashFill) flashFill.style.width = '0%';
+      if (sbStatus) sbStatus.textContent = 'TRANSMITTING CONFIG…';
 
       try {
         await flashConfigToGadget({
@@ -206,36 +227,44 @@ function initControls() {
           units: store.settings.units,
           invert: store.settings.invert,
         });
-
-        flashBtn.classList.remove('flashing');
-        flashBtn.classList.add('flash-success');
-        if (flashStatusEl) flashStatusEl.textContent = 'FLASHED SUCCESSFULLY ✓';
-
-        setTimeout(() => {
-          flashBtn.classList.remove('flash-success');
-          if (flashStatusEl) flashStatusEl.textContent = 'READY';
-        }, 2200);
       } catch (err) {
-        flashBtn.classList.remove('flashing');
-        if (flashStatusEl) flashStatusEl.textContent = `FLASH ERROR: ${err}`;
-        setTimeout(() => {
-          if (flashStatusEl) flashStatusEl.textContent = 'READY';
-        }, 3000);
+        console.warn('IPC send_config error:', err);
       }
+
+      let p = 0;
+      const tick = setInterval(() => {
+        p += 14 + Math.random() * 12;
+        if (p >= 100) {
+          p = 100;
+          clearInterval(tick);
+          if (flashFill) flashFill.style.width = '100%';
+          if (flashLabel) flashLabel.textContent = 'FLASHED ✓';
+          if (sbStatus) sbStatus.textContent = 'FLASH COMPLETE · SAVED TO EEPROM';
+
+          setTimeout(() => {
+            if (flashFill) flashFill.style.width = '0%';
+            if (flashLabel) flashLabel.textContent = 'FLASH TO GADGET →';
+            flashBtn.classList.remove('busy');
+            flashBtn.disabled = false;
+            if (sbStatus) sbStatus.textContent = 'READY';
+            flashing = false;
+          }, 1500);
+        } else {
+          if (flashFill) flashFill.style.width = `${p}%`;
+          if (flashLabel) flashLabel.textContent = `FLASHING ${Math.round(p)}%`;
+        }
+      }, 60);
     });
   }
 
   // Presets Save / Load
-  const savePresetBtn = document.getElementById('preset-save');
-  const loadPresetBtn = document.getElementById('preset-load');
-
-  if (savePresetBtn) {
-    savePresetBtn.addEventListener('click', async () => {
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
       try {
         await savePresetFile(store.settings);
-        if (flashStatusEl) flashStatusEl.textContent = 'PRESET SAVED';
+        if (sbStatus) sbStatus.textContent = 'PRESET SAVED TO DISK';
         setTimeout(() => {
-          if (flashStatusEl) flashStatusEl.textContent = 'READY';
+          if (sbStatus) sbStatus.textContent = 'READY';
         }, 1500);
       } catch (e) {
         console.error('Preset save failed:', e);
@@ -243,24 +272,36 @@ function initControls() {
     });
   }
 
-  if (loadPresetBtn) {
-    loadPresetBtn.addEventListener('click', async () => {
+  if (loadBtn) {
+    loadBtn.addEventListener('click', async () => {
       try {
         const loaded = await loadPresetFile();
-        if (loaded) {
+        if (loaded && typeof loaded === 'object') {
           store.updateSettings(loaded);
           // Sync UI
           if (brightnessSlider) brightnessSlider.value = store.settings.brightness;
-          if (brightnessValEl) brightnessValEl.textContent = `${store.settings.brightness}%`;
-          ['label', 'temp', 'units', 'invert', 'auto'].forEach((prop) => {
-            const el = document.getElementById(`opt-${prop}`);
-            if (el && store.settings[prop] !== undefined) el.checked = store.settings[prop];
+          if (brightnessVal) brightnessVal.textContent = `${store.settings.brightness}%`;
+          if (screenEl) screenEl.style.filter = `brightness(${0.45 + store.settings.brightness / 160})`;
+
+          document.querySelectorAll('#refreshSeg button').forEach((b) => {
+            b.classList.toggle('on', parseInt(b.dataset.v, 10) === store.settings.refresh);
           });
+          document.querySelectorAll('.sw').forEach((s) => {
+            s.classList.toggle('on', s.dataset.c === store.settings.accent);
+          });
+          document.querySelectorAll('.toggle').forEach((t) => {
+            const k = t.dataset.k;
+            if (typeof store.settings[k] === 'boolean') {
+              t.classList.toggle('on', store.settings[k]);
+            }
+          });
+
           updateThumbnailSelection();
           updateThumbnailsAccent();
-          if (flashStatusEl) flashStatusEl.textContent = 'PRESET LOADED';
+          updateFaceHeaderNames();
+          if (sbStatus) sbStatus.textContent = 'PRESET LOADED';
           setTimeout(() => {
-            if (flashStatusEl) flashStatusEl.textContent = 'READY';
+            if (sbStatus) sbStatus.textContent = 'READY';
           }, 1500);
         }
       } catch (e) {
@@ -280,11 +321,11 @@ function startTelemetryLoop() {
       store.setConnection(isLive);
 
       if (isLive) {
-        if (connPillEl) connPillEl.classList.add('live');
-        if (connStatusText) connStatusText.textContent = 'LIVE · 115200 BAUD';
+        if (connPill) connPill.classList.add('live');
+        if (connText) connText.textContent = 'ONLINE';
       } else {
-        if (connPillEl) connPillEl.classList.remove('live');
-        if (connStatusText) connStatusText.textContent = 'OFFLINE';
+        if (connPill) connPill.classList.remove('live');
+        if (connText) connText.textContent = 'DISCONNECTED';
       }
 
       const data = await fetchTelemetry();
@@ -314,6 +355,7 @@ function bootstrap() {
   initFaceLibrary();
   initControls();
   initResponsiveScaler();
+  updateFaceHeaderNames();
 
   // Subscribe to state changes to update the screen
   store.subscribe((s, change) => {

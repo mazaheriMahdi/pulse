@@ -97,7 +97,7 @@
 
 .dotbar-24 i.on.red,
 .dotbar-28 i.on.red {
-  background: var(--brand-red);
+  background: var(--red, #d71921);
 }
 
 /* ── DUAL LOAD LAYOUT (THE GOLD STANDARD) ─────────────────────── */
