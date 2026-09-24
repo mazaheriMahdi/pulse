@@ -2,5 +2,5 @@
 board = "uno"
 open-console = false
 serial-baudrate = 57600
-port = "/dev/ttyUSB0"
+port = "/dev/ttyUSB1"
 reset-delay = 0
