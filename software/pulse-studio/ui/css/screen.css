@@ -14,6 +14,7 @@
   overflow: hidden;
   position: relative;
   color: var(--acc, #ffffff);
+  --dot-off: color-mix(in srgb, var(--acc, #ffffff) 10%, #161616);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.03),
     0 20px 60px rgba(0, 0, 0, 0.9),
@@ -23,6 +24,7 @@
 .screen.invert {
   background: #f5f5f5;
   color: #000000;
+  --dot-off: color-mix(in srgb, var(--acc, #000000) 10%, #e2e2e2);
 }
 
 /* ── SIDEBAR THUMBNAIL CARDS ─────────────────────────────────── */

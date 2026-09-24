@@ -84,7 +84,7 @@
 .dotbar-20 i {
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: #1c1c1c;
+  background: var(--dot-off, #1c1c1c);
   display: block;
 }
 

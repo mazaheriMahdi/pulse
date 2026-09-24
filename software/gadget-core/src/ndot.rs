@@ -49,6 +49,7 @@ pub const fn get_ndot_glyph(c: u8) -> [u8; 7] {
 
 /// Draws a single 5×7 NDot glyph at cell size `cell`.
 /// Automatically renders circular dots for cells >= 7, square dots for smaller cells.
+/// If `dot_off != bg`, disabled/unlit matrix positions are rendered as faint circular dots with low tint.
 pub fn draw_ndot_char<D: Display>(
     display: &mut D,
     x: u16,
@@ -57,6 +58,7 @@ pub fn draw_ndot_char<D: Display>(
     cell: u16,
     fg: Color,
     bg: Color,
+    dot_off: Color,
 ) {
     let glyph = get_ndot_glyph(c);
 
@@ -77,9 +79,13 @@ pub fn draw_ndot_char<D: Display>(
                     display.fill_rect(cx + 1, cy + 3, 12, 8, fg);
                     display.fill_rect(cx + 2, cy + 11, 10, 1, fg);
                     display.fill_rect(cx + 4, cy + 12, 6, 1, fg);
+                } else if dot_off != bg {
+                    display.fill_rect(cx + 4, cy + 3, 6, 1, dot_off);
+                    display.fill_rect(cx + 3, cy + 4, 8, 6, dot_off);
+                    display.fill_rect(cx + 4, cy + 10, 6, 1, dot_off);
                 }
             } else if cell == 11 {
-                // Giant 11×11 cell with smooth 9px circular dot
+                // Giant 11×11 cell with smooth 9px circular dot when ON, 7px tinted circular dot when OFF
                 display.fill_rect(cx, cy, 11, 11, bg);
                 if is_on {
                     display.fill_rect(cx + 4, cy + 1, 3, 1, fg);
@@ -87,6 +93,10 @@ pub fn draw_ndot_char<D: Display>(
                     display.fill_rect(cx + 1, cy + 4, 9, 3, fg);
                     display.fill_rect(cx + 2, cy + 7, 7, 2, fg);
                     display.fill_rect(cx + 4, cy + 9, 3, 1, fg);
+                } else if dot_off != bg {
+                    display.fill_rect(cx + 4, cy + 2, 3, 1, dot_off);
+                    display.fill_rect(cx + 2, cy + 3, 7, 5, dot_off);
+                    display.fill_rect(cx + 4, cy + 8, 3, 1, dot_off);
                 }
             } else if cell == 9 {
                 // Big 9×9 cell with smooth 7px circular dot
@@ -95,14 +105,30 @@ pub fn draw_ndot_char<D: Display>(
                     display.fill_rect(cx + 3, cy + 1, 3, 1, fg);
                     display.fill_rect(cx + 1, cy + 2, 7, 5, fg);
                     display.fill_rect(cx + 3, cy + 7, 3, 1, fg);
+                } else if dot_off != bg {
+                    display.fill_rect(cx + 3, cy + 2, 3, 1, dot_off);
+                    display.fill_rect(cx + 2, cy + 3, 5, 3, dot_off);
+                    display.fill_rect(cx + 3, cy + 6, 3, 1, dot_off);
                 }
             } else if cell == 7 {
-                // Medium 7×7 cell with smooth 5px circular dot
+                // Medium 7×7 cell with smooth 5px circular dot when ON, 3px tinted dot when OFF
                 display.fill_rect(cx, cy, 7, 7, bg);
                 if is_on {
                     display.fill_rect(cx + 2, cy + 1, 3, 1, fg);
                     display.fill_rect(cx + 1, cy + 2, 5, 3, fg);
                     display.fill_rect(cx + 2, cy + 5, 3, 1, fg);
+                } else if dot_off != bg {
+                    display.fill_rect(cx + 2, cy + 2, 3, 3, dot_off);
+                }
+            } else if cell == 5 {
+                // 5×5 cell (e.g. % glyph)
+                display.fill_rect(cx, cy, 5, 5, bg);
+                if is_on {
+                    display.fill_rect(cx + 1, cy, 3, 1, fg);
+                    display.fill_rect(cx, cy + 1, 5, 3, fg);
+                    display.fill_rect(cx + 1, cy + 4, 3, 1, fg);
+                } else if dot_off != bg {
+                    display.fill_rect(cx + 1, cy + 1, 3, 3, dot_off);
                 }
             } else if cell == 4 {
                 // 4×4 cell with 4px circular dot
@@ -111,6 +137,8 @@ pub fn draw_ndot_char<D: Display>(
                     display.fill_rect(cx + 1, cy, 2, 1, fg);
                     display.fill_rect(cx, cy + 1, 4, 2, fg);
                     display.fill_rect(cx + 1, cy + 3, 2, 1, fg);
+                } else if dot_off != bg {
+                    display.fill_rect(cx + 1, cy + 1, 2, 2, dot_off);
                 }
             } else if cell == 3 {
                 // Small 3×3 cell with 2×2 dot
@@ -120,7 +148,7 @@ pub fn draw_ndot_char<D: Display>(
                 }
             } else {
                 // Generic cell
-                let col_color = if is_on { fg } else { bg };
+                let col_color = if is_on { fg } else { if dot_off != bg { dot_off } else { bg } };
                 display.fill_rect(cx, cy, cell, cell, col_color);
             }
         }
@@ -148,7 +176,7 @@ pub fn draw_ndot_str<D: Display>(
             x += gap_x;
             total_w += gap_x;
         }
-        draw_ndot_char(display, x, y, b, cell, fg, bg);
+        draw_ndot_char(display, x, y, b, cell, fg, bg, bg);
         x += char_w;
         total_w += char_w;
     }
