@@ -5,7 +5,7 @@ use panic_halt as _;
 
 use arduino_hal::prelude::*;
 use arduino_hal::spi;
-use gadget_common::{TelemetryPacket, PACKET_LEN};
+use gadget_common::{ConfigurationPacket, TelemetryPacket, CONFIG_MAGIC_0, CONFIG_MAGIC_1, MAGIC_0, MAGIC_1, PACKET_LEN};
 use gadget_core::{Dashboard, DelayMs, Ili9488, PinWrite, SpiWrite};
 
 struct UnoPin<P>(pub P);
@@ -41,18 +41,45 @@ impl DelayMs for UnoDelay {
     }
 }
 
+struct EepromStorage;
+
+impl EepromStorage {
+    pub fn read_config() -> Option<ConfigurationPacket> {
+        let dp = unsafe { arduino_hal::pac::Peripherals::steal() };
+        let mut buf = [0u8; PACKET_LEN];
+        for i in 0..PACKET_LEN {
+            while dp.EEPROM.eecr().read().eepe().bit_is_set() {}
+            dp.EEPROM.eear().write(|w| unsafe { w.bits(i as u16) });
+            dp.EEPROM.eecr().write(|w| w.eere().set_bit());
+            buf[i] = dp.EEPROM.eedr().read().bits();
+        }
+        ConfigurationPacket::decode(&buf)
+    }
+
+    pub fn write_config(config: &ConfigurationPacket) {
+        let dp = unsafe { arduino_hal::pac::Peripherals::steal() };
+        let mut buf = [0u8; PACKET_LEN];
+        config.encode(&mut buf);
+        for i in 0..PACKET_LEN {
+            while dp.EEPROM.eecr().read().eepe().bit_is_set() {}
+            dp.EEPROM.eear().write(|w| unsafe { w.bits(i as u16) });
+            dp.EEPROM.eedr().write(|w| unsafe { w.bits(buf[i]) });
+            dp.EEPROM.eecr().write(|w| w.eempe().set_bit());
+            dp.EEPROM.eecr().write(|w| w.eepe().set_bit());
+        }
+    }
+}
+
 #[arduino_hal::entry]
 fn main() -> ! {
     let dp = arduino_hal::Peripherals::take().unwrap();
     let pins = arduino_hal::pins!(dp);
 
-    // Serial console for receiving TelemetryPackets from laptop host
+    // Serial console for communication with laptop host daemon
     let mut serial = arduino_hal::default_serial!(dp, pins, 115200);
 
     // Hardware SPI on Uno: D13 (SCK), D11 (MOSI), D12 (MISO)
-    // CS is on D10
-    // DC / RS is on D9
-    // RESET is on D8
+    // CS is on D10, DC on D9, RST on D8
     let (spi_bus, cs_pin) = arduino_hal::Spi::new(
         dp.SPI,
         pins.d13.into_output(),
@@ -77,11 +104,14 @@ fn main() -> ! {
     // Initialize display with hardware reset sequence & registers
     display.init(&mut delay);
 
-    // Create dashboard UI
-    let mut dashboard = Dashboard::new();
-    dashboard.draw_layout(&mut display);
+    // Restore saved face configuration from EEPROM (or default Dual Load)
+    let saved_config = EepromStorage::read_config().unwrap_or_default();
 
-    // Render initial zeroed telemetry waiting for host daemon
+    // Create dashboard UI and draw active face shell
+    let mut dashboard = Dashboard::new();
+    dashboard.apply_config(&mut display, saved_config);
+
+    // Initial zeroed telemetry waiting for host daemon
     let mut current_packet = TelemetryPacket::new(0, 0, 0, 0, 0, 100);
     dashboard.update(&mut display, &mut delay, current_packet);
 
@@ -91,19 +121,21 @@ fn main() -> ! {
     let mut rx_idx: usize = 0;
 
     loop {
-        // Read serial data without blocking
+        // Read serial byte stream without blocking
         match serial.read() {
             Ok(b) => {
                 if rx_idx == 0 {
-                    if b == gadget_common::MAGIC_0 {
+                    if b == MAGIC_0 || b == CONFIG_MAGIC_0 {
                         rx_buf[0] = b;
                         rx_idx = 1;
                     }
                 } else if rx_idx == 1 {
-                    if b == gadget_common::MAGIC_1 {
+                    let m0 = rx_buf[0];
+                    if (m0 == MAGIC_0 && b == MAGIC_1) || (m0 == CONFIG_MAGIC_0 && b == CONFIG_MAGIC_1) {
                         rx_buf[1] = b;
                         rx_idx = 2;
-                    } else if b == gadget_common::MAGIC_0 {
+                    } else if b == MAGIC_0 || b == CONFIG_MAGIC_0 {
+                        rx_buf[0] = b;
                         rx_idx = 1;
                     } else {
                         rx_idx = 0;
@@ -117,6 +149,11 @@ fn main() -> ! {
                             current_packet = packet;
                             dashboard.update(&mut display, &mut delay, current_packet);
                             let _ = ufmt::uwriteln!(&mut serial, "ACK");
+                        } else if let Some(cfg) = ConfigurationPacket::decode(&rx_buf) {
+                            dashboard.apply_config(&mut display, cfg);
+                            EepromStorage::write_config(&cfg);
+                            dashboard.update(&mut display, &mut delay, current_packet);
+                            let _ = ufmt::uwriteln!(&mut serial, "CONFIG_ACK");
                         }
                         rx_idx = 0;
                     }

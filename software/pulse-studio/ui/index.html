@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PULSE STUDIO — Gadget Control Software</title>
+<style>
+  /* ============================================================
+     PULSE STUDIO
+     Desktop companion app for the PULSE desktop gadget.
+     Nothing × Teenage Engineering design language.
+     ============================================================ */
+  :root{
+    --bg:#050505;
+    --panel:#0b0b0b;
+    --card:#111111;
+    --card-hi:#181818;
+    --line:#1e1e1e;
+    --line-hi:#2b2b2b;
+    --text:#f2f2f2;
+    --dim:#5a5a5a;
+    --dimmer:#2a2a2a;
+    --red:#d71921;
+    --orange:#ff5a00;
+    --acc:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:#000;
+    color:var(--text);
+    font-family:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    overflow:hidden;
+    user-select:none;
+  }
+
+  /* ============================================================
+     APP SHELL
+     ============================================================ */
+  .app{
+    width:min(1380px,100vw);
+    height:min(860px,100vh);
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:4px;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    box-shadow:0 40px 100px rgba(0,0,0,.9);
+  }
+
+  /* ---------- TITLE BAR ---------- */
+  .titlebar{
+    flex:0 0 52px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 18px;
+    border-bottom:1px solid var(--line);
+    background:var(--bg);
+    -webkit-app-region: drag;
+  }
+  .tb-left{ display:flex; align-items:center; gap:16px; -webkit-app-region: no-drag; }
+  .tb-mark{
+    display:flex; align-items:center; gap:8px;
+    font-size:15px; font-weight:800; letter-spacing:.22em;
+  }
+  .tb-mark .blip{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--red);
+    box-shadow:0 0 10px rgba(215,25,33,.8);
+  }
+  .tb-mark .sub{
+    font-size:10px; font-weight:600; letter-spacing:.24em;
+    color:var(--dim);
+  }
+  .tb-conn{
+    display:flex; align-items:center; gap:10px;
+    padding:6px 12px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    font-size:10px; font-weight:700; letter-spacing:.18em;
+    color:var(--dim);
+  }
+  .tb-conn .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--orange);
+    box-shadow:0 0 8px rgba(255,90,0,.7);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  .tb-conn.live{ color:var(--text); border-color:var(--line-hi); }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .tb-right{ display:flex; align-items:center; gap:20px; -webkit-app-region: no-drag; }
+  .tb-port{
+    display:flex; align-items:center; gap:8px;
+    font-size:10px; font-weight:700; letter-spacing:.16em;
+    color:var(--dim);
+  }
+  .tb-port select{
+    background:transparent; border:1px solid var(--line);
+    color:var(--text); font:inherit; font-size:10px;
+    padding:4px 8px; border-radius:2px; cursor:pointer;
+    letter-spacing:.12em;
+  }
+  .tb-wctl{ display:flex; gap:14px; }
+  .tb-wctl i{
+    width:10px; height:10px; border:1px solid var(--line-hi);
+    border-radius:50%; display:block; cursor:pointer;
+    transition:.15s;
+  }
+  .tb-wctl i:hover{ border-color:var(--text); }
+  .tb-wctl i.sq{ border-radius:1px; }
+  .tb-wctl i.red:hover{ background:var(--red); border-color:var(--red); }
+
+  /* ============================================================
+     BODY : 3 COLUMNS
+     ============================================================ */
+  .body{
+    flex:1 1 auto; min-height:0;
+    display:flex;
+  }
+
+  /* ---------- LEFT : FACE LIBRARY ---------- */
+  .library{
+    flex:0 0 300px;
+    border-right:1px solid var(--line);
+    display:flex; flex-direction:column;
+    min-height:0;
+  }
+  .col-head{
+    flex:0 0 40px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .col-head .t{
+    font-size:10px; font-weight:800; letter-spacing:.26em;
+    color:var(--dim);
+  }
+  .col-head .n{
+    font-size:10px; font-weight:700; letter-spacing:.14em;
+    color:var(--dimmer);
+  }
+  .lib-scroll{
+    flex:1 1 auto; min-height:0; overflow-y:auto;
+    padding:14px;
+  }
+  .lib-scroll::-webkit-scrollbar{ width:6px; }
+  .lib-scroll::-webkit-scrollbar-thumb{ background:var(--line-hi); border-radius:3px; }
+
+  .lib-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  .face{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:10px 10px 8px;
+    cursor:pointer;
+    transition:.15s;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .face:hover{ background:var(--card-hi); border-color:var(--line-hi); }
+  .face.on{
+    border-color:var(--text);
+    background:var(--card-hi);
+  }
+  .face.on::before{
+    content:""; position:absolute; top:-1px; left:-1px; right:-1px; height:2px;
+    background:var(--text);
+  }
+  .face .thumb{
+    width:100%; aspect-ratio:121/76;
+    background:#000; border:1px solid var(--line);
+    border-radius:2px; display:block;
+  }
+  .face .fname{
+    font-size:9px; font-weight:800; letter-spacing:.18em;
+    color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .face.on .fname{ color:var(--text); }
+
+  /* ---------- CENTER : LIVE PREVIEW ---------- */
+  .stage{
+    flex:1 1 auto; min-width:0;
+    display:flex; flex-direction:column;
+    background:
+      radial-gradient(circle at 50% 40%, #0d0d0d 0%, #060606 70%);
+  }
+  .stage-head{
+    flex:0 0 40px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px;
+    border-bottom:1px solid var(--line);
+  }
+  .stage-head .t{
+    font-size:10px; font-weight:800; letter-spacing:.26em;
+    color:var(--dim);
+  }
+  .stage-head .m{
+    display:flex; align-items:center; gap:8px;
+    font-size:10px; font-weight:700; letter-spacing:.16em;
+    color:var(--dim);
+  }
+  .stage-head .m .live{
+    width:5px; height:5px; border-radius:50%; background:var(--orange);
+    animation:pulse 1.4s ease-in-out infinite;
+  }
+
+  .preview-area{
+    flex:1 1 auto; min-height:0;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .preview-scaler{
+    width:calc(480px * 1.35);
+    height:calc(320px * 1.35);
+    position:relative;
+    flex:0 0 auto;
+  }
+  .screen{
+    width:480px; height:320px;
+    background:#000;
+    border:1px solid #1a1a1a;
+    border-radius:6px;
+    transform:scale(1.35);
+    transform-origin:top left;
+    overflow:hidden;
+    position:relative;
+    color:var(--acc);
+    --acc:#ffffff;
+    box-shadow:0 0 0 1px rgba(255,255,255,.03),
+               0 20px 60px rgba(0,0,0,.9),
+               inset 0 0 80px rgba(255,255,255,.015);
+  }
+
+  .stage-foot{
+    flex:0 0 34px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px;
+    border-top:1px solid var(--line);
+    font-size:10px; font-weight:700; letter-spacing:.16em;
+    color:var(--dimmer);
+  }
+  .stage-foot .now{ color:var(--dim); }
+
+  /* ---------- RIGHT : SETTINGS ---------- */
+  .settings{
+    flex:0 0 300px;
+    border-left:1px solid var(--line);
+    display:flex; flex-direction:column;
+    min-height:0;
+  }
+  .set-scroll{
+    flex:1 1 auto; min-height:0; overflow-y:auto;
+    padding:16px;
+    display:flex; flex-direction:column; gap:22px;
+  }
+  .set-scroll::-webkit-scrollbar{ width:6px; }
+  .set-scroll::-webkit-scrollbar-thumb{ background:var(--line-hi); border-radius:3px; }
+
+  .group{ display:flex; flex-direction:column; gap:10px; }
+  .group > .glabel{
+    font-size:9px; font-weight:800; letter-spacing:.28em;
+    color:var(--dim);
+    padding-bottom:2px;
+    border-bottom:1px solid var(--line);
+  }
+
+  /* accent swatches */
+  .swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .sw{
+    width:30px; height:30px; border-radius:50%;
+    border:1px solid var(--line-hi);
+    cursor:pointer; position:relative;
+    transition:.15s;
+  }
+  .sw:hover{ transform:scale(1.08); }
+  .sw.on{ border-color:#fff; }
+  .sw.on::after{
+    content:""; position:absolute; inset:-5px;
+    border:1px solid rgba(255,255,255,.35); border-radius:50%;
+  }
+  .sw[data-c="#ffffff"]{ background:#ffffff; }
+  .sw[data-c="#d71921"]{ background:#d71921; }
+  .sw[data-c="#ff5a00"]{ background:#ff5a00; }
+  .sw[data-c="#2ee6c5"]{ background:#2ee6c5; }
+  .sw[data-c="#8b8cf9"]{ background:#8b8cf9; }
+  .sw[data-c="#ffc247"]{ background:#ffc247; }
+
+  /* segmented */
+  .seg{
+    display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
+    border:1px solid var(--line); border-radius:3px; overflow:hidden;
+  }
+  .seg button{
+    background:transparent; border:0; border-right:1px solid var(--line);
+    color:var(--dim); font:inherit;
+    font-size:10px; font-weight:700; letter-spacing:.12em;
+    padding:9px 0; cursor:pointer; transition:.15s;
+  }
+  .seg button:last-child{ border-right:0; }
+  .seg button:hover{ color:var(--text); background:var(--card); }
+  .seg button.on{ color:#000; background:#fff; }
+
+  /* slider */
+  .slider{ display:flex; align-items:center; gap:12px; }
+  .slider input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    flex:1 1 auto; height:2px; background:var(--line-hi);
+    border-radius:1px; outline:none; cursor:pointer;
+  }
+  .slider input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:14px; height:14px; border-radius:50%;
+    background:#fff; cursor:pointer;
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--line-hi);
+  }
+  .slider .val{
+    font-size:11px; font-weight:800; letter-spacing:.08em;
+    color:var(--text); min-width:34px; text-align:right;
+  }
+
+  /* toggles */
+  .toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 0;
+    cursor:pointer;
+    font-size:11px; font-weight:600; letter-spacing:.1em;
+    color:var(--dim);
+    border-bottom:1px solid var(--line);
+  }
+  .toggle:last-child{ border-bottom:0; }
+  .toggle:hover{ color:var(--text); }
+  .toggle .sw-box{
+    width:30px; height:16px; border-radius:8px;
+    background:var(--dimmer); position:relative;
+    transition:.2s; flex:0 0 auto;
+  }
+  .toggle .sw-box::after{
+    content:""; position:absolute; top:2px; left:2px;
+    width:12px; height:12px; border-radius:50%;
+    background:#5a5a5a; transition:.2s;
+  }
+  .toggle.on .sw-box{ background:#fff; }
+  .toggle.on .sw-box::after{ left:16px; background:#000; }
+  .toggle.on{ color:var(--text); }
+
+  /* ============================================================
+     STATUS BAR / FLASH
+     ============================================================ */
+  .statusbar{
+    flex:0 0 68px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px;
+    border-top:1px solid var(--line);
+    background:var(--bg);
+  }
+  .sb-info{
+    display:flex; align-items:center; gap:22px;
+    font-size:10px; font-weight:700; letter-spacing:.16em;
+    color:var(--dim);
+  }
+  .sb-info b{ color:var(--text); font-weight:800; }
+  .sb-actions{ display:flex; gap:10px; align-items:center; }
+
+  .btn{
+    font:inherit; font-size:11px; font-weight:800; letter-spacing:.2em;
+    padding:0 22px; height:40px; border-radius:2px;
+    cursor:pointer; transition:.15s;
+    display:inline-flex; align-items:center; gap:10px;
+    border:1px solid var(--line-hi);
+    background:transparent; color:var(--dim);
+  }
+  .btn:hover{ color:var(--text); border-color:#4a4a4a; }
+  .btn.primary{
+    background:#fff; color:#000; border-color:#fff;
+    min-width:180px; justify-content:center;
+  }
+  .btn.primary:hover{ background:#e6e6e6; border-color:#e6e6e6; }
+  .btn.primary:disabled{ opacity:.5; cursor:default; }
+
+  .flashbar{
+    position:relative; overflow:hidden;
+  }
+  .flashbar .fill{
+    position:absolute; left:0; top:0; bottom:0; width:0%;
+    background:var(--orange);
+    transition:width .12s linear;
+    z-index:0;
+  }
+  .flashbar span{ position:relative; z-index:1; }
+  .flashbar.busy{ color:#000; }
+
+  /* ============================================================
+     SCREEN CONTENT STYLES
+     ============================================================ */
+  .scr{
+    width:100%; height:100%;
+    padding:20px 24px;
+    display:flex; flex-direction:column;
+    color:var(--acc);
+  }
+  .scr-top{
+    display:flex; align-items:baseline; justify-content:space-between;
+    font-size:14px; font-weight:800; letter-spacing:.24em;
+    line-height:1;
+  }
+  .scr-top .lbl{ color:var(--acc); }
+  .scr-top .meta{ color:#6a6a6a; font-weight:700; font-size:13px; }
+  .scr-mid{
+    flex:1 1 auto; display:flex; align-items:center; justify-content:center;
+    margin:6px 0;
+  }
+  .scr-bot{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:16px;
+  }
+  .scr-bot .note{
+    font-size:12px; font-weight:700; letter-spacing:.14em;
+    color:#5a5a5a;
+  }
+
+  /* dot bar */
+  .dotbar{
+    display:grid; grid-template-columns:repeat(28,1fr);
+    gap:3px; width:100%;
+  }
+  .dotbar i{
+    aspect-ratio:1/1; border-radius:50%;
+    background:#181818;
+  }
+  .dotbar i.on{ background:var(--acc); }
+
+  /* dual layout */
+  .scr.dual{ padding:16px 22px; }
+  .dual-grid{
+    flex:1 1 auto; display:grid; grid-template-columns:1fr 1px 1fr;
+    gap:0; align-items:stretch; margin-top:6px;
+  }
+  .dual-col{
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:8px; padding:0 8px;
+  }
+  .dual-div{ background:#1a1a1a; }
+  .dual-col .lbl{
+    font-size:13px; font-weight:800; letter-spacing:.24em;
+    color:var(--acc);
+  }
+  .dual-col .sub{
+    font-size:12px; font-weight:700; letter-spacing:.1em;
+    color:#6a6a6a;
+  }
+
+  /* thermal layout */
+  .scr.thermal{ padding:18px 24px; }
+  .thermal-row{
+    flex:1 1 auto; display:flex; align-items:center;
+    justify-content:space-between; gap:24px;
+  }
+  .thermal-item{ display:flex; align-items:baseline; gap:10px; }
+  .thermal-item .tag{
+    font-size:14px; font-weight:800; letter-spacing:.2em;
+    color:var(--acc);
+  }
+
+  /* ram / disk layout */
+  .scr.stack{ padding:20px 24px; }
+  .bar-stack{
+    flex:1 1 auto; display:flex; flex-direction:column;
+    justify-content:center; gap:14px; margin:8px 0;
+  }
+  .row-line{
+    display:flex; align-items:center; gap:14px;
+  }
+  .row-line .rl{
+    font-size:12px; font-weight:800; letter-spacing:.2em;
+    color:var(--acc); min-width:52px;
+  }
+  .row-line .rb{
+    flex:1 1 auto; height:10px; border-radius:5px;
+    background:#181818; overflow:hidden;
+  }
+  .row-line .rb i{ display:block; height:100%; background:var(--acc); }
+  .row-line .rv{
+    font-size:13px; font-weight:800; letter-spacing:.08em;
+    color:var(--acc); min-width:56px; text-align:right;
+  }
+
+  /* minimal layout */
+  .scr.minimal{
+    align-items:center; justify-content:center;
+    padding:0;
+  }
+  .scr.minimal .bigwrap{
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:6px;
+  }
+  .scr.minimal .smallnote{
+    font-size:12px; font-weight:800; letter-spacing:.4em;
+    color:#5a5a5a;
+  }
+
+  /* network layout */
+  .net-grid{
+    flex:1 1 auto; display:flex; flex-direction:column;
+    justify-content:center; gap:20px; margin-top:4px;
+  }
+  .net-line{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:20px;
+  }
+  .net-line .nl{
+    font-size:14px; font-weight:800; letter-spacing:.24em;
+    color:var(--acc);
+  }
+  .net-line .nv{
+    display:flex; align-items:baseline; gap:6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ TITLE BAR ============ -->
+  <header class="titlebar">
+    <div class="tb-left">
+      <div class="tb-mark">
+        <span class="blip"></span>
+        PULSE<span class="sub">/ STUDIO</span>
+      </div>
+      <div class="tb-conn live" id="connPill">
+        <span class="dot"></span>
+        <span id="connText">CONNECTING…</span>
+      </div>
+    </div>
+
+    <div class="tb-right">
+      <div class="tb-port">
+        PORT
+        <select id="portSel">
+          <option>/dev/ttyUSB1</option>
+          <option>/dev/ttyUSB0</option>
+          <option>/dev/ttyACM0</option>
+        </select>
+      </div>
+      <div class="tb-wctl">
+        <i id="btnMin" title="minimize"></i>
+        <i id="btnMax" class="sq" title="maximize"></i>
+        <i id="btnClose" class="red" title="close"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ BODY ============ -->
+  <div class="body">
+
+    <!-- ---------- FACE LIBRARY ---------- -->
+    <aside class="library">
+      <div class="col-head">
+        <span class="t">FACE LIBRARY</span>
+        <span class="n" id="faceCount">8 FACES</span>
+      </div>
+      <div class="lib-scroll">
+        <div class="lib-grid" id="faceGrid"></div>
+      </div>
+    </aside>
+
+    <!-- ---------- LIVE PREVIEW ---------- -->
+    <main class="stage">
+      <div class="stage-head">
+        <span class="t">LIVE PREVIEW</span>
+        <span class="m"><span class="live"></span><span id="streamRate">STREAMING · 5 HZ</span></span>
+      </div>
+
+      <div class="preview-area">
+        <div class="preview-scaler">
+          <div class="screen" id="screen"></div>
+        </div>
+      </div>
+
+      <div class="stage-foot">
+        <span>480 × 320 · IPS · ILI9488</span>
+        <span class="now" id="previewName">—</span>
+      </div>
+    </main>
+
+    <!-- ---------- SETTINGS ---------- -->
+    <aside class="settings">
+      <div class="col-head">
+        <span class="t">FACE SETTINGS</span>
+        <span class="n" id="setName">DUAL LOAD</span>
+      </div>
+
+      <div class="set-scroll">
+
+        <div class="group">
+          <div class="glabel">ACCENT</div>
+          <div class="swatches" id="swatches">
+            <div class="sw on" data-c="#ffffff"></div>
+            <div class="sw" data-c="#d71921"></div>
+            <div class="sw" data-c="#ff5a00"></div>
+            <div class="sw" data-c="#2ee6c5"></div>
+            <div class="sw" data-c="#8b8cf9"></div>
+            <div class="sw" data-c="#ffc247"></div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">REFRESH RATE</div>
+          <div class="seg" id="refreshSeg">
+            <button data-v="1">1 HZ</button>
+            <button data-v="2">2 HZ</button>
+            <button data-v="5" class="on">5 HZ</button>
+            <button data-v="10">10 HZ</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">BRIGHTNESS</div>
+          <div class="slider">
+            <input type="range" id="brightness" min="10" max="100" value="80">
+            <span class="val" id="brightnessVal">80%</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">DISPLAY</div>
+          <div class="toggle on" data-k="label">
+            <span>SHOW LABEL</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle on" data-k="temp">
+            <span>SHOW TEMPERATURE</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle on" data-k="units">
+            <span>SHOW UNITS</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle" data-k="invert">
+            <span>INVERT (LIGHT THEME)</span><span class="sw-box"></span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">DEVICE</div>
+          <div class="toggle on" data-k="auto">
+            <span>AUTO-REFRESH PREVIEW</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle on" data-k="keep">
+            <span>KEEP AWAKE ON USB</span><span class="sw-box"></span>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ============ STATUS BAR ============ -->
+  <footer class="statusbar">
+    <div class="sb-info">
+      <span>DEVICE <b>PULSE v1</b></span>
+      <span>FW <b>1.0.0</b></span>
+      <span>BUFFER <b>32 KB</b></span>
+      <span id="sbStatus">READY</span>
+    </div>
+    <div class="sb-actions">
+      <button class="btn" id="saveBtn">SAVE PRESET</button>
+      <button class="btn primary flashbar" id="flashBtn">
+        <span class="fill" id="flashFill"></span>
+        <span id="flashLabel">FLASH TO GADGET →</span>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   TAURI IPC BRIDGE
+   ============================================================ */
+const isTauri = !!(window.__TAURI__ && window.__TAURI__.core);
+const invoke = isTauri ? window.__TAURI__.core.invoke : async (cmd, args) => {
+  console.log('[Mock IPC invoke]', cmd, args);
+  return null;
+};
+
+/* ============================================================
+   1. DOT-MATRIX FONT (5×7 grid per glyph)
+   ============================================================ */
+const FONT = {
+  '0':["01110","10001","10001","10001","10001","10001","01110"],
+  '1':["00100","01100","00100","00100","00100","00100","01110"],
+  '2':["01110","10001","00001","00010","00100","01000","11111"],
+  '3':["11111","00010","00100","00010","00001","10001","01110"],
+  '4':["00010","00110","01010","10010","11111","00010","00010"],
+  '5':["11111","10000","11110","00001","00001","10001","01110"],
+  '6':["00110","01000","10000","11110","10001","10001","01110"],
+  '7':["11111","00001","00010","00100","01000","01000","01000"],
+  '8':["01110","10001","10001","01110","10001","10001","01110"],
+  '9':["01110","10001","10001","01111","00001","00010","01100"],
+  '°':["01100","10010","10010","01100","00000","00000","00000"],
+  ' ':["00000","00000","00000","00000","00000","00000","00000"],
+};
+
+function dm(text, cell, cls){
+  const chars = [...String(text)];
+  const GAP = 1;
+  const cols = chars.length * 5 + Math.max(0, chars.length - 1) * GAP;
+  const rows = 7;
+
+  let dots = '';
+  chars.forEach((ch, i) => {
+    const g = FONT[ch] || FONT[' '];
+    const ox = i * (5 + GAP);
+    for (let y = 0; y < rows; y++){
+      for (let x = 0; x < 5; x++){
+        if (g[y][x] === '1'){
+          dots += `<circle cx="${ox + x + 0.5}" cy="${y + 0.5}" r="0.45"/>`;
+        }
+      }
+    }
+  });
+
+  return `<svg class="${cls||''}" width="${cols*cell}" height="${rows*cell}"`
+       + ` viewBox="0 0 ${cols} ${rows}" fill="currentColor">${dots}</svg>`;
+}
+
+/* ============================================================
+   2. LIVE DATA (Hardware Telemetry with Drift Fallback)
+   ============================================================ */
+const DATA = {
+  cpu: 37, cpuT: 54,
+  gpu: 82, gpuT: 71,
+  ram: 64, ramT: 42,
+  disk: 28, diskR: 124, diskW: 38,
+  netUp: 12.4, netDn: 86.2,
+  fan: 62
+};
+
+let hasLiveHardware = false;
+
+// Poll live hardware telemetry from host daemon IPC
+async function pollHardwareTelemetry(){
+  try {
+    const tele = await invoke('get_telemetry');
+    if (tele) {
+      DATA.cpu = tele.cpu;
+      DATA.cpuT = tele.cpu_temp;
+      DATA.gpu = tele.gpu;
+      DATA.gpuT = tele.gpu_temp;
+      DATA.ram = tele.ram;
+      DATA.ramT = Math.round(tele.cpu_temp * 0.75);
+      hasLiveHardware = true;
+
+      document.getElementById('connPill').classList.add('live');
+      document.getElementById('connText').textContent = 'CONNECTED · /dev/ttyUSB1';
+      if (S.auto) renderPreview();
+      return;
+    }
+  } catch (err) {
+    // not connected
+  }
+
+  hasLiveHardware = false;
+  document.getElementById('connPill').classList.remove('live');
+  document.getElementById('connText').textContent = 'SIMULATED · STANDALONE';
+}
+
+const drift = (v, amt, lo, hi) =>
+  Math.max(lo, Math.min(hi, v + (Math.random() - .5) * amt));
+
+// Fallback simulated drift when daemon is not streaming
+setInterval(() => {
+  if (!hasLiveHardware) {
+    DATA.cpu   = drift(DATA.cpu,   14, 4, 99);
+    DATA.cpuT  = drift(DATA.cpuT,   3, 38, 92);
+    DATA.gpu   = drift(DATA.gpu,   18, 4, 99);
+    DATA.gpuT  = drift(DATA.gpuT, 2.5, 42, 88);
+    DATA.ram   = drift(DATA.ram,    8, 20, 95);
+    DATA.ramT  = drift(DATA.ramT,   2, 35, 70);
+    DATA.disk  = drift(DATA.disk,  14, 2, 99);
+    DATA.diskR = drift(DATA.diskR, 40, 0, 400);
+    DATA.diskW = drift(DATA.diskW, 20, 0, 200);
+    DATA.netUp = drift(DATA.netUp,  8, 0, 60);
+    DATA.netDn = drift(DATA.netDn, 30, 0, 400);
+
+    if (S.auto) renderPreview();
+  }
+}, 900);
+
+setInterval(pollHardwareTelemetry, 250);
+
+/* ============================================================
+   3. SETTINGS STATE
+   ============================================================ */
+const S = {
+  face: 'dual',
+  accent: '#ffffff',
+  refresh: 5,
+  brightness: 80,
+  label: true,
+  temp: true,
+  units: true,
+  invert: false,
+  auto: true,
+  keep: true
+};
+
+/* ============================================================
+   4. FACE DEFINITIONS
+   ============================================================ */
+const FACES = [
+  { id:'dual',     name:'DUAL LOAD',   short:'CPU+GPU'},
+  { id:'cpu',      name:'CPU GRID',    short:'CPU'   },
+  { id:'gpu',      name:'GPU GRID',    short:'GPU'   },
+  { id:'ram',      name:'MEMORY',      short:'RAM'   },
+  { id:'thermal',  name:'THERMAL',     short:'TEMP'  },
+  { id:'minimal',  name:'MINIMAL',     short:'ONE'   },
+  { id:'disk',     name:'STORAGE',     short:'DISK'  },
+  { id:'network',  name:'NETWORK',     short:'NET'   },
+];
+
+/* ============================================================
+   5. FACE RENDERERS
+   ============================================================ */
+function label(text, on){ return on ? text : ''; }
+
+function dotbar(pct, count){
+  const lit = Math.round(Math.max(0, Math.min(100, pct)) / 100 * count);
+  let h = '<div class="dotbar">';
+  for (let i = 0; i < count; i++){
+    h += `<i class="${i < lit ? 'on' : ''}"></i>`;
+  }
+  return h + '</div>';
+}
+
+function faceSingle(which){
+  const pct   = Math.round(DATA[which]);
+  const temp  = Math.round(DATA[which + 'T']);
+  const LBL   = which.toUpperCase();
+
+  return `
+    <div class="scr">
+      <div class="scr-top">
+        <span class="lbl">${label(LBL, S.label)}</span>
+        <span class="meta">${S.temp ? temp + '°C' : ''}</span>
+      </div>
+      <div class="scr-mid">${dm(pct, 15)}</div>
+      <div class="scr-bot">
+        <div style="flex:1">${dotbar(pct, 28)}</div>
+        <div class="note">${S.units ? '%' : ''}</div>
+      </div>
+    </div>`;
+}
+
+function faceDual(){
+  const c = Math.round(DATA.cpu), g = Math.round(DATA.gpu);
+  const ct = Math.round(DATA.cpuT), gt = Math.round(DATA.gpuT);
+  return `
+    <div class="scr dual">
+      <div class="scr-top">
+        <span class="lbl">${label('LOAD', S.label)}</span>
+        <span class="meta">${label('DUAL', S.label)}</span>
+      </div>
+      <div class="dual-grid">
+        <div class="dual-col">
+          <div class="lbl">${label('CPU', S.label)}</div>
+          ${dm(c, 9)}
+          <div class="sub">${S.temp ? ct + '°C' : ''}</div>
+        </div>
+        <div class="dual-div"></div>
+        <div class="dual-col">
+          <div class="lbl">${label('GPU', S.label)}</div>
+          ${dm(g, 9)}
+          <div class="sub">${S.temp ? gt + '°C' : ''}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function faceRam(){
+  const pct = Math.round(DATA.ram);
+  const used = (pct / 100 * 32).toFixed(1);
+  return `
+    <div class="scr stack">
+      <div class="scr-top">
+        <span class="lbl">${label('MEMORY', S.label)}</span>
+        <span class="meta">${S.temp ? Math.round(DATA.ramT)+'°C' : ''}</span>
+      </div>
+      <div class="scr-mid" style="flex:0 0 auto;margin:8px 0 0">${dm(pct, 12)}</div>
+      <div class="bar-stack">
+        <div class="row-line">
+          <span class="rl">${label('USED', S.label)}</span>
+          <div class="rb"><i style="width:${pct}%"></i></div>
+          <span class="rv">${S.units ? used+'G' : ''}</span>
+        </div>
+        <div class="row-line">
+          <span class="rl">${label('FREE', S.label)}</span>
+          <div class="rb"><i style="width:${100-pct}%"></i></div>
+          <span class="rv">${S.units ? (32-used).toFixed(1)+'G' : ''}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function faceDisk(){
+  const pct = Math.round(DATA.disk);
+  return `
+    <div class="scr stack">
+      <div class="scr-top">
+        <span class="lbl">${label('STORAGE', S.label)}</span>
+        <span class="meta">ACTIVE</span>
+      </div>
+      <div class="scr-mid" style="flex:0 0 auto;margin:6px 0 0">${dm(pct, 11)}</div>
+      <div class="bar-stack">
+        <div class="row-line">
+          <span class="rl">READ</span>
+          <div class="rb"><i style="width:${Math.min(100, DATA.diskR/4)}%"></i></div>
+          <span class="rv">${S.units ? Math.round(DATA.diskR)+'M' : ''}</span>
+        </div>
+        <div class="row-line">
+          <span class="rl">WRITE</span>
+          <div class="rb"><i style="width:${Math.min(100, DATA.diskW/2)}%"></i></div>
+          <span class="rv">${S.units ? Math.round(DATA.diskW)+'M' : ''}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function faceThermal(){
+  const ct = Math.round(DATA.cpuT), gt = Math.round(DATA.gpuT);
+  return `
+    <div class="scr thermal">
+      <div class="scr-top">
+        <span class="lbl">${label('THERMAL', S.label)}</span>
+        <span class="meta">${S.units ? '°C' : ''}</span>
+      </div>
+      <div class="thermal-row">
+        <div class="thermal-item">
+          <span class="tag">CPU</span>
+          ${dm(ct, 11)}
+        </div>
+        <div class="thermal-item">
+          <span class="tag">GPU</span>
+          ${dm(gt, 11)}
+        </div>
+      </div>
+    </div>`;
+}
+
+function faceNetwork(){
+  return `
+    <div class="scr">
+      <div class="scr-top">
+        <span class="lbl">${label('NETWORK', S.label)}</span>
+        <span class="meta">ETH0</span>
+      </div>
+      <div class="net-grid">
+        <div class="net-line">
+          <span class="nl">↑ UP</span>
+          <span class="nv">${dm(Math.round(DATA.netUp), 7)}</span>
+        </div>
+        <div class="net-line">
+          <span class="nl">↓ DOWN</span>
+          <span class="nv">${dm(Math.round(DATA.netDn), 7)}</span>
+        </div>
+      </div>
+      <div class="scr-bot">
+        <div style="flex:1">${dotbar(Math.min(100, DATA.netDn/4), 28)}</div>
+        <div class="note">MB/S</div>
+      </div>
+    </div>`;
+}
+
+function faceMinimal(){
+  const pct = Math.round(DATA.cpu);
+  return `
+    <div class="scr minimal">
+      <div class="bigwrap">
+        ${dm(pct, 18)}
+        <div class="smallnote">${label('CPU %', S.label)}</div>
+      </div>
+    </div>`;
+}
+
+function renderFace(){
+  switch (S.face){
+    case 'cpu':     return faceSingle('cpu');
+    case 'gpu':     return faceSingle('gpu');
+    case 'dual':    return faceDual();
+    case 'ram':     return faceRam();
+    case 'disk':    return faceDisk();
+    case 'thermal': return faceThermal();
+    case 'network': return faceNetwork();
+    case 'minimal': return faceMinimal();
+    default:        return faceDual();
+  }
+}
+
+/* ============================================================
+   6. THUMBNAILS
+   ============================================================ */
+function thumb(id){
+  const wrap = (inner) =>
+    `<svg class="thumb" viewBox="0 0 121 76" fill="none">${inner}</svg>`;
+
+  const dots = (cols, rows, lit, ox, oy, s, gap) => {
+    let h = '';
+    for (let y = 0; y < rows; y++){
+      for (let x = 0; x < cols; x++){
+        const i = y * cols + x;
+        const on = i < lit;
+        h += `<circle cx="${ox + x*(s+gap)}" cy="${oy + y*(s+gap)}" r="${s/2}"`
+           + ` fill="${on ? 'currentColor' : '#1b1b1b'}"/>`;
+      }
+    }
+    return h;
+  };
+
+  switch (id){
+    case 'cpu':
+      return wrap(dots(9, 5, 26, 10, 20, 5, 3)
+        + `<text x="10" y="66" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">CPU</text>`);
+    case 'gpu':
+      return wrap(dots(9, 5, 34, 10, 20, 5, 3)
+        + `<text x="10" y="66" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">GPU</text>`);
+    case 'dual':
+      return wrap(
+        dots(4, 4, 10, 18, 22, 5, 3)
+        + dots(4, 4, 13, 66, 22, 5, 3)
+        + `<rect x="60" y="20" width="1" height="28" fill="#1b1b1b"/>`
+        + `<text x="18" y="66" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">CPU</text>`
+        + `<text x="68" y="66" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">GPU</text>`);
+    case 'ram':
+      return wrap(
+        `<rect x="14" y="22" width="80" height="7" rx="3.5" fill="#1b1b1b"/>`
+        + `<rect x="14" y="22" width="52" height="7" rx="3.5" fill="currentColor"/>`
+        + `<rect x="14" y="36" width="80" height="7" rx="3.5" fill="#1b1b1b"/>`
+        + `<rect x="14" y="36" width="28" height="7" rx="3.5" fill="currentColor"/>`
+        + `<text x="14" y="62" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">MEMORY</text>`);
+    case 'disk':
+      return wrap(
+        `<circle cx="60" cy="34" r="18" stroke="#1b1b1b" stroke-width="2" fill="none"/>`
+        + `<path d="M60 16 A18 18 0 0 1 76 30" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>`
+        + `<circle cx="60" cy="34" r="4" fill="currentColor"/>`
+        + `<text x="14" y="66" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">DISK</text>`);
+    case 'thermal':
+      return wrap(
+        dots(3, 5, 5, 32, 18, 7, 4)
+        + dots(3, 5, 12, 66, 18, 7, 4)
+        + `<text x="14" y="70" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">THERMAL</text>`);
+    case 'network':
+      return wrap(
+        `<path d="M34 46 L34 22 L30 28 M34 22 L38 28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+        + `<path d="M86 30 L86 54 L82 48 M86 54 L90 48" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+        + `<text x="14" y="70" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">NETWORK</text>`);
+    case 'minimal':
+      return wrap(
+        dots(4, 7, 14, 44, 14, 5, 3)
+        + `<text x="14" y="70" fill="#5a5a5a" font-size="6" font-family="Inter" letter-spacing="1.4" font-weight="700">MINIMAL</text>`);
+  }
+  return wrap('');
+}
+
+/* ============================================================
+   7. BUILD THE FACE LIBRARY GRID
+   ============================================================ */
+const faceGrid = document.getElementById('faceGrid');
+faceGrid.innerHTML = FACES.map(f => `
+  <div class="face${f.id === S.face ? ' on' : ''}" data-id="${f.id}" style="color:${f.id===S.face?S.accent:'#5a5a5a'}">
+    ${thumb(f.id)}
+    <div class="fname">${f.name}</div>
+  </div>
+`).join('');
+
+faceGrid.addEventListener('click', e => {
+  const card = e.target.closest('.face');
+  if (!card) return;
+  S.face = card.dataset.id;
+  faceGrid.querySelectorAll('.face').forEach(c => c.classList.remove('on'));
+  card.classList.add('on');
+  faceGrid.querySelectorAll('.face').forEach(c => {
+    c.style.color = c.classList.contains('on') ? S.accent : '#5a5a5a';
+  });
+  document.getElementById('setName').textContent =
+    (FACES.find(f => f.id === S.face) || {}).name || '';
+  document.getElementById('previewName').textContent =
+    (FACES.find(f => f.id === S.face) || {}).short || '';
+  renderPreview();
+});
+
+/* ============================================================
+   8. PREVIEW RENDER
+   ============================================================ */
+const screenEl = document.getElementById('screen');
+
+function renderPreview(){
+  screenEl.style.setProperty('--acc', S.accent);
+  screenEl.style.background = S.invert ? '#f5f5f5' : '#000';
+  screenEl.style.color = S.accent;
+  screenEl.innerHTML = renderFace();
+}
+
+/* ============================================================
+   9. SETTINGS WIRING
+   ============================================================ */
+// accent swatches
+document.getElementById('swatches').addEventListener('click', e => {
+  const sw = e.target.closest('.sw');
+  if (!sw) return;
+  S.accent = sw.dataset.c;
+  document.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+  sw.classList.add('on');
+  const onCard = faceGrid.querySelector('.face.on');
+  if (onCard) onCard.style.color = S.accent;
+  renderPreview();
+});
+
+// refresh rate
+document.getElementById('refreshSeg').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  S.refresh = +b.dataset.v;
+  document.querySelectorAll('#refreshSeg button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  document.getElementById('streamRate').textContent = `STREAMING · ${S.refresh} HZ`;
+});
+
+// brightness
+const bright = document.getElementById('brightness');
+bright.addEventListener('input', () => {
+  S.brightness = +bright.value;
+  document.getElementById('brightnessVal').textContent = S.brightness + '%';
+  screenEl.style.filter = `brightness(${0.45 + S.brightness/160})`;
+});
+bright.dispatchEvent(new Event('input'));
+
+// toggles
+document.querySelectorAll('.toggle').forEach(t => {
+  t.addEventListener('click', () => {
+    const k = t.dataset.k;
+    S[k] = !S[k];
+    t.classList.toggle('on', S[k]);
+    renderPreview();
+  });
+});
+
+// window controls
+document.getElementById('btnMin').addEventListener('click', () => invoke('minimize_window'));
+document.getElementById('btnMax').addEventListener('click', () => invoke('maximize_window'));
+document.getElementById('btnClose').addEventListener('click', () => invoke('close_window'));
+
+// ============================================================
+// 10. FLASH ACTION (Serial IPC)
+// ============================================================
+const flashBtn   = document.getElementById('flashBtn');
+const flashFill  = document.getElementById('flashFill');
+const flashLabel = document.getElementById('flashLabel');
+const sbStatus   = document.getElementById('sbStatus');
+
+let flashing = false;
+
+flashBtn.addEventListener('click', async () => {
+  if (flashing) return;
+  flashing = true;
+
+  flashBtn.disabled = true;
+  flashBtn.classList.add('busy');
+  flashFill.style.width = '0%';
+  sbStatus.textContent = 'TRANSMITTING CONFIG…';
+
+  try {
+    // Send configuration to gadget via IPC and serial
+    await invoke('send_config', { config: S });
+  } catch (err) {
+    console.warn('IPC send_config:', err);
+  }
+
+  let p = 0;
+  const tick = setInterval(() => {
+    p += 14 + Math.random() * 12;
+    if (p >= 100){
+      p = 100;
+      clearInterval(tick);
+      flashFill.style.width = '100%';
+      flashLabel.textContent = 'FLASHED ✓';
+      sbStatus.textContent = 'FLASH COMPLETE · SAVED TO EEPROM';
+
+      setTimeout(() => {
+        flashFill.style.width = '0%';
+        flashLabel.textContent = 'FLASH TO GADGET →';
+        flashBtn.classList.remove('busy');
+        flashBtn.disabled = false;
+        sbStatus.textContent = 'READY';
+        flashing = false;
+      }, 1500);
+    } else {
+      flashFill.style.width = p + '%';
+      flashLabel.textContent = 'FLASHING ' + Math.round(p) + '%';
+    }
+  }, 60);
+});
+
+// ============================================================
+// 11. SAVE & LOAD PRESET
+// ============================================================
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  try {
+    await invoke('save_preset', { preset: S });
+  } catch (err) {
+    console.warn('Save preset:', err);
+  }
+  sbStatus.textContent = 'PRESET SAVED TO DISK';
+  setTimeout(() => sbStatus.textContent = 'READY', 1500);
+});
+
+async function initPreset(){
+  try {
+    const loaded = await invoke('load_preset');
+    if (loaded && typeof loaded === 'object') {
+      Object.assign(S, loaded);
+      // Update UI elements
+      document.querySelectorAll('#refreshSeg button').forEach(b => {
+        b.classList.toggle('on', +b.dataset.v === S.refresh);
+      });
+      document.getElementById('brightness').value = S.brightness;
+      document.getElementById('brightnessVal').textContent = S.brightness + '%';
+      document.querySelectorAll('.sw').forEach(s => {
+        s.classList.toggle('on', s.dataset.c === S.accent);
+      });
+      document.querySelectorAll('.toggle').forEach(t => {
+        const k = t.dataset.k;
+        if (typeof S[k] === 'boolean') {
+          t.classList.toggle('on', S[k]);
+        }
+      });
+      const card = faceGrid.querySelector(`[data-id="${S.face}"]`);
+      if (card) {
+        faceGrid.querySelectorAll('.face').forEach(c => c.classList.remove('on'));
+        card.classList.add('on');
+      }
+    }
+  } catch (err) {
+    // ignore
+  }
+
+  document.getElementById('previewName').textContent =
+    (FACES.find(f => f.id === S.face) || {}).short || '';
+  document.getElementById('setName').textContent =
+    (FACES.find(f => f.id === S.face) || {}).name || '';
+  renderPreview();
+}
+
+initPreset();
+</script>
+</body>
+</html>

@@ -1,11 +1,41 @@
 use clap::Parser;
-use gadget_common::{TelemetryPacket, PACKET_LEN};
+use gadget_common::{ConfigurationPacket, TelemetryPacket, PACKET_LEN};
+use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
+
+pub const IPC_SOCKET_PATH: &str = "/tmp/pulse-studio.sock";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum IpcMessage {
+    #[serde(rename = "telemetry")]
+    Telemetry {
+        cpu: u8,
+        cpu_temp: u8,
+        ram: u8,
+        gpu: u8,
+        gpu_temp: u8,
+        battery: u8,
+    },
+    #[serde(rename = "config")]
+    Config {
+        face_id: u8,
+        accent_color_id: u8,
+        brightness: u8,
+        refresh_hz: u8,
+        flags: u8,
+    },
+    #[serde(rename = "ack")]
+    Ack,
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Desktop Gadget Telemetry Host Daemon")]
@@ -357,6 +387,93 @@ fn open_serial_port(port_name: &str, baud: u32) -> Option<Box<dyn serialport::Se
     }
 }
 
+fn start_ipc_server(config_tx: Sender<ConfigurationPacket>) -> Arc<Mutex<Vec<UnixStream>>> {
+    let clients = Arc::new(Mutex::new(Vec::<UnixStream>::new()));
+    let clients_clone = Arc::clone(&clients);
+
+    let _ = fs::remove_file(IPC_SOCKET_PATH);
+
+    let listener = match UnixListener::bind(IPC_SOCKET_PATH) {
+        Ok(l) => {
+            println!("IPC Unix Domain Socket server listening on {}", IPC_SOCKET_PATH);
+            l
+        }
+        Err(e) => {
+            eprintln!("Warning: Failed to bind IPC socket {}: {}", IPC_SOCKET_PATH, e);
+            return clients;
+        }
+    };
+    let _ = listener.set_nonblocking(true);
+
+    std::thread::spawn(move || {
+        loop {
+            // Accept incoming connections
+            match listener.accept() {
+                Ok((stream, _)) => {
+                    let _ = stream.set_nonblocking(true);
+                    if let Ok(mut c) = clients_clone.lock() {
+                        c.push(stream);
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                Err(e) => {
+                    eprintln!("IPC accept error: {}", e);
+                }
+            }
+
+            // Check incoming requests from clients
+            if let Ok(mut c) = clients_clone.lock() {
+                let mut to_remove = Vec::new();
+                for (idx, stream) in c.iter_mut().enumerate() {
+                    let mut reader = BufReader::new(&mut *stream);
+                    let mut line = String::new();
+                    match reader.read_line(&mut line) {
+                        Ok(0) => {
+                            to_remove.push(idx);
+                        }
+                        Ok(_) => {
+                            if let Ok(msg) = serde_json::from_str::<IpcMessage>(&line) {
+                                match msg {
+                                    IpcMessage::Config {
+                                        face_id,
+                                        accent_color_id,
+                                        brightness,
+                                        refresh_hz,
+                                        flags,
+                                    } => {
+                                        let cfg = ConfigurationPacket::new(
+                                            face_id,
+                                            accent_color_id,
+                                            brightness,
+                                            refresh_hz,
+                                            flags,
+                                        );
+                                        let _ = config_tx.send(cfg);
+                                        let ack = serde_json::to_string(&IpcMessage::Ack).unwrap() + "\n";
+                                        let _ = stream.write_all(ack.as_bytes());
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                        Err(_) => {
+                            to_remove.push(idx);
+                        }
+                    }
+                }
+                for idx in to_remove.into_iter().rev() {
+                    c.remove(idx);
+                }
+            }
+
+            sleep(Duration::from_millis(50));
+        }
+    });
+
+    clients
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
@@ -368,6 +485,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Interval:    {} ms", args.interval_ms);
     println!("Dry run:     {}", args.dry_run);
     println!("------------------------------------------");
+
+    let (config_tx, config_rx) = channel::<ConfigurationPacket>();
+    let ipc_clients = start_ipc_server(config_tx);
+    let mut interval_ms = args.interval_ms;
 
     let mut port = if !args.dry_run {
         open_serial_port(&args.port, args.baud)
@@ -382,6 +503,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nStreaming live telemetry to desktop gadget (Ctrl+C to stop)...\n");
 
     loop {
+        // Handle incoming configuration requests from Studio
+        while let Ok(cfg) = config_rx.try_recv() {
+            println!(
+                "\n[IPC] Received configuration from Studio: Face {}, Accent {}, Brightness {}%, Refresh {}Hz",
+                cfg.face_id, cfg.accent_color_id, cfg.brightness, cfg.refresh_hz
+            );
+            if cfg.refresh_hz > 0 {
+                interval_ms = (1000 / cfg.refresh_hz as u64).max(50);
+            }
+            if let Some(ref mut p) = port {
+                let mut buf = [0u8; PACKET_LEN];
+                cfg.encode(&mut buf);
+                if let Err(e) = p.write_all(&buf) {
+                    eprintln!("Failed to write configuration to serial: {}", e);
+                } else {
+                    println!("[Serial] Injected ConfigurationPacket to gadget successfully!");
+                }
+            }
+        }
+
         let cpu = cpu_sampler.sample();
         let cpu_temp = read_cpu_temp();
         let ram = read_ram_percent();
@@ -396,6 +537,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         std::io::stdout().flush().ok();
 
+        // Broadcast telemetry to connected Studio IPC clients
+        let tele_msg = IpcMessage::Telemetry {
+            cpu,
+            cpu_temp,
+            ram,
+            gpu,
+            gpu_temp,
+            battery: bat,
+        };
+        if let Ok(json_line) = serde_json::to_string(&tele_msg) {
+            let payload = json_line + "\n";
+            if let Ok(mut c) = ipc_clients.lock() {
+                let mut to_remove = Vec::new();
+                for (idx, client) in c.iter_mut().enumerate() {
+                    if let Err(_) = client.write_all(payload.as_bytes()) {
+                        to_remove.push(idx);
+                    }
+                }
+                for idx in to_remove.into_iter().rev() {
+                    c.remove(idx);
+                }
+            }
+        }
+
         if let Some(ref mut p) = port {
             let mut buf = [0u8; PACKET_LEN];
             packet.encode(&mut buf);
@@ -404,9 +569,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        sleep(Duration::from_millis(args.interval_ms));
+        sleep(Duration::from_millis(interval_ms));
     }
 }
+
 
 #[cfg(test)]
 mod tests {

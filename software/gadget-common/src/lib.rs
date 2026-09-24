@@ -62,6 +62,99 @@ impl TelemetryPacket {
     }
 }
 
+pub const CONFIG_MAGIC_0: u8 = 0x55;
+pub const CONFIG_MAGIC_1: u8 = 0xAA;
+
+pub const FLAG_SHOW_LABEL: u8 = 1 << 0;
+pub const FLAG_SHOW_TEMP:  u8 = 1 << 1;
+pub const FLAG_SHOW_UNITS: u8 = 1 << 2;
+pub const FLAG_INVERT:     u8 = 1 << 3;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct ConfigurationPacket {
+    pub face_id: u8,
+    pub accent_color_id: u8,
+    pub brightness: u8,
+    pub refresh_hz: u8,
+    pub flags: u8,
+    pub reserved: u8,
+}
+
+impl Default for ConfigurationPacket {
+    fn default() -> Self {
+        Self {
+            face_id: 2, // Default: Dual Load
+            accent_color_id: 0, // Default: White
+            brightness: 80,
+            refresh_hz: 5,
+            flags: FLAG_SHOW_LABEL | FLAG_SHOW_TEMP | FLAG_SHOW_UNITS,
+            reserved: 0,
+        }
+    }
+}
+
+impl ConfigurationPacket {
+    pub fn new(
+        face_id: u8,
+        accent_color_id: u8,
+        brightness: u8,
+        refresh_hz: u8,
+        flags: u8,
+    ) -> Self {
+        Self {
+            face_id: face_id.min(7),
+            accent_color_id: accent_color_id.min(5),
+            brightness: brightness.clamp(10, 100),
+            refresh_hz: refresh_hz.clamp(1, 20),
+            flags,
+            reserved: 0,
+        }
+    }
+
+    pub fn encode(&self, out: &mut [u8; PACKET_LEN]) {
+        out[0] = CONFIG_MAGIC_0;
+        out[1] = CONFIG_MAGIC_1;
+        out[2] = self.face_id;
+        out[3] = self.accent_color_id;
+        out[4] = self.brightness;
+        out[5] = self.refresh_hz;
+        out[6] = self.flags;
+        out[7] = self.reserved;
+    }
+
+    pub fn decode(buf: &[u8]) -> Option<Self> {
+        if buf.len() < PACKET_LEN {
+            return None;
+        }
+        if buf[0] != CONFIG_MAGIC_0 || buf[1] != CONFIG_MAGIC_1 {
+            return None;
+        }
+        Some(Self::new(
+            buf[2],
+            buf[3],
+            buf[4],
+            buf[5],
+            buf[6],
+        ))
+    }
+
+    pub fn show_label(&self) -> bool {
+        (self.flags & FLAG_SHOW_LABEL) != 0
+    }
+
+    pub fn show_temp(&self) -> bool {
+        (self.flags & FLAG_SHOW_TEMP) != 0
+    }
+
+    pub fn show_units(&self) -> bool {
+        (self.flags & FLAG_SHOW_UNITS) != 0
+    }
+
+    pub fn invert(&self) -> bool {
+        (self.flags & FLAG_INVERT) != 0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,4 +321,43 @@ mod tests {
         let pkt3 = TelemetryPacket::new(11, 20, 30, 40, 50, 60);
         assert_ne!(pkt1, pkt3);
     }
+
+    #[test]
+    fn test_config_packet_roundtrip() {
+        let flags = FLAG_SHOW_LABEL | FLAG_SHOW_TEMP | FLAG_INVERT;
+        let config = ConfigurationPacket::new(3, 2, 75, 10, flags);
+        let mut buf = [0u8; PACKET_LEN];
+        config.encode(&mut buf);
+
+        assert_eq!(buf[0], CONFIG_MAGIC_0);
+        assert_eq!(buf[1], CONFIG_MAGIC_1);
+        assert_eq!(buf[2], 3); // face_id
+        assert_eq!(buf[3], 2); // accent_color_id
+        assert_eq!(buf[4], 75); // brightness
+        assert_eq!(buf[5], 10); // refresh_hz
+        assert_eq!(buf[6], flags);
+        assert_eq!(buf[7], 0);
+
+        let decoded = ConfigurationPacket::decode(&buf).expect("config decode should succeed");
+        assert_eq!(decoded, config);
+        assert!(decoded.show_label());
+        assert!(decoded.show_temp());
+        assert!(!decoded.show_units());
+        assert!(decoded.invert());
+    }
+
+    #[test]
+    fn test_config_packet_bounds_and_magic() {
+        // Clamping check
+        let config = ConfigurationPacket::new(99, 99, 150, 50, 0xFF);
+        assert_eq!(config.face_id, 7);
+        assert_eq!(config.accent_color_id, 5);
+        assert_eq!(config.brightness, 100);
+        assert_eq!(config.refresh_hz, 20);
+
+        // Magic rejection check
+        let bad_buf = [0xAA, 0x55, 0, 0, 0, 0, 0, 0]; // Telemetry magic, not config magic
+        assert_eq!(ConfigurationPacket::decode(&bad_buf), None);
+    }
 }
+
