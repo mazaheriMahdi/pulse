@@ -68,7 +68,17 @@ pub fn draw_ndot_char<D: Display>(
             let is_on = ((row_bits >> (4 - col)) & 1) != 0;
             let cx = x + col * cell;
 
-            if cell == 11 {
+            if cell == 14 {
+                // Giant 14×14 cell with smooth 12px circular dot
+                display.fill_rect(cx, cy, 14, 14, bg);
+                if is_on {
+                    display.fill_rect(cx + 4, cy + 1, 6, 1, fg);
+                    display.fill_rect(cx + 2, cy + 2, 10, 1, fg);
+                    display.fill_rect(cx + 1, cy + 3, 12, 8, fg);
+                    display.fill_rect(cx + 2, cy + 11, 10, 1, fg);
+                    display.fill_rect(cx + 4, cy + 12, 6, 1, fg);
+                }
+            } else if cell == 11 {
                 // Giant 11×11 cell with smooth 9px circular dot
                 display.fill_rect(cx, cy, 11, 11, bg);
                 if is_on {

@@ -235,21 +235,28 @@ impl Dashboard {
         bg: Color,
         fg: Color,
         dim: Color,
-        line: Color,
+        _line: Color,
     ) {
+        let (_, _, _, _, dot_off) = self.get_palette();
         if self.config.show_label() {
             draw_ndot_str(display, S_MARGIN_X, HEAD_Y, b"MEMORY", 3, fg, bg);
         }
 
-        // Row lines for USED and FREE
         let bar_x = S_MARGIN_X + 64;
         let bar_w = WIDTH - bar_x - S_MARGIN_X - 60;
+        let mem_dots: usize = 20;
 
-        draw_ascii(display, S_MARGIN_X, 190, b"USED", fg, bg, 2);
-        display.draw_rect(bar_x, 192, bar_w, 14, line);
+        draw_ndot_str(display, S_MARGIN_X, 190, b"USED", 2, fg, bg);
+        for i in 0..mem_dots {
+            let cx = bar_x + ((i as u32 * (bar_w as u32 - 7)) / (mem_dots as u32 - 1)) as u16;
+            draw_dot_circle_7px(display, cx, 194, dot_off);
+        }
 
-        draw_ascii(display, S_MARGIN_X, 230, b"FREE", dim, bg, 2);
-        display.draw_rect(bar_x, 232, bar_w, 14, line);
+        draw_ndot_str(display, S_MARGIN_X, 230, b"FREE", 2, dim, bg);
+        for i in 0..mem_dots {
+            let cx = bar_x + ((i as u32 * (bar_w as u32 - 7)) / (mem_dots as u32 - 1)) as u16;
+            draw_dot_circle_7px(display, cx, 234, dot_off);
+        }
     }
 
     fn draw_thermal_shell<D: Display>(
@@ -270,15 +277,15 @@ impl Dashboard {
         // Divider
         display.draw_vline(DIV_X, 50, HEIGHT - 50, line);
 
-        // Tags
-        draw_ascii(display, S_MARGIN_X, 80, b"CPU", dim, bg, 2);
-        draw_ascii(display, DIV_X + S_MARGIN_X, 80, b"GPU", dim, bg, 2);
+        // Tags in dot matrix
+        draw_ndot_str(display, S_MARGIN_X, 80, b"CPU", 3, dim, bg);
+        draw_ndot_str(display, DIV_X + S_MARGIN_X, 80, b"GPU", 3, dim, bg);
     }
 
     fn draw_minimal_shell<D: Display>(&self, display: &mut D, bg: Color, dim: Color) {
         if self.config.show_label() {
-            let note = b"CPU %";
-            draw_ascii(display, (WIDTH - (note.len() as u16 * 14)) / 2, 230, note, dim, bg, 2);
+            let cx = (WIDTH - 75) / 2;
+            draw_ndot_str(display, cx, 230, b"CPU", 3, dim, bg);
         }
     }
 
@@ -392,23 +399,30 @@ impl Dashboard {
     }
 
     fn update_memory<D: Display>(&mut self, display: &mut D, ram: u8, temp: u8) {
-        let (bg, fg, dim, _line, _) = self.get_palette();
+        let (bg, fg, dim, _line, dot_off) = self.get_palette();
 
         if ram != self.prev_val1 {
             // Draw RAM percentage numeral
             self.draw_huge_val(display, S_MARGIN_X, S_VAL_Y, ram, fg, bg);
 
-            // Horizontal stack bars
-            let bar_x = S_MARGIN_X + 65;
-            let bar_w = WIDTH - bar_x - S_MARGIN_X - 62;
+            // Horizontal circular dot bars
+            let bar_x = S_MARGIN_X + 64;
+            let bar_w = WIDTH - bar_x - S_MARGIN_X - 60;
+            let mem_dots: usize = 20;
 
-            let used_px = ((ram.min(100) as u32 * bar_w as u32) / 100) as u16;
-            display.fill_rect(bar_x + 1, 194, used_px, 10, fg);
-            display.fill_rect(bar_x + 1 + used_px, 194, bar_w - used_px, 10, bg);
+            let used_dots = ((ram.min(100) as u32 * mem_dots as u32 + 50) / 100) as usize;
+            for i in 0..mem_dots {
+                let cx = bar_x + ((i as u32 * (bar_w as u32 - 7)) / (mem_dots as u32 - 1)) as u16;
+                let col = if i < used_dots { fg } else { dot_off };
+                draw_dot_circle_7px(display, cx, 194, col);
+            }
 
-            let free_px = bar_w - used_px;
-            display.fill_rect(bar_x + 1, 234, free_px, 10, dim);
-            display.fill_rect(bar_x + 1 + free_px, 234, bar_w - free_px, 10, bg);
+            let free_dots = mem_dots.saturating_sub(used_dots);
+            for i in 0..mem_dots {
+                let cx = bar_x + ((i as u32 * (bar_w as u32 - 7)) / (mem_dots as u32 - 1)) as u16;
+                let col = if i < free_dots { dim } else { dot_off };
+                draw_dot_circle_7px(display, cx, 234, col);
+            }
 
             self.prev_val1 = ram;
         }

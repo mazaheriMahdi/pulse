@@ -681,8 +681,26 @@
 /* ============================================================
    TAURI IPC BRIDGE
    ============================================================ */
-const isTauri = !!(window.__TAURI__ && window.__TAURI__.core);
-const invoke = isTauri ? window.__TAURI__.core.invoke : async (cmd, args) => {
+function getTauriInvoke() {
+  if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') {
+    return window.__TAURI__.core.invoke;
+  }
+  if (window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === 'function') {
+    return window.__TAURI_INTERNALS__.invoke;
+  }
+  return null;
+}
+
+const invoke = async (cmd, args) => {
+  const inv = getTauriInvoke();
+  if (inv) {
+    try {
+      return await inv(cmd, args);
+    } catch (err) {
+      console.warn(`[Tauri IPC Error on ${cmd}]:`, err);
+      throw err;
+    }
+  }
   console.log('[Mock IPC invoke]', cmd, args);
   return null;
 };
@@ -701,12 +719,39 @@ const FONT = {
   '7':["11111","00001","00010","00100","01000","01000","01000"],
   '8':["01110","10001","10001","01110","10001","10001","01110"],
   '9':["01110","10001","10001","01111","00001","00010","01100"],
+  'C':["01110","10001","10000","10000","10000","10001","01110"],
+  'P':["11110","10001","10001","11110","10000","10000","10000"],
+  'U':["10001","10001","10001","10001","10001","10001","01110"],
+  'G':["01110","10001","10000","10111","10001","10001","01111"],
+  'L':["10000","10000","10000","10000","10000","10000","11111"],
+  'S':["01111","10000","10000","01110","00001","00001","11110"],
+  'E':["11111","10000","10000","11110","10000","10000","11111"],
+  'D':["11110","10001","10001","10001","10001","10001","11110"],
+  'A':["01110","10001","10001","11111","10001","10001","10001"],
+  'M':["10001","11011","10101","10001","10001","10001","10001"],
+  'O':["01110","10001","10001","10001","10001","10001","01110"],
+  'R':["11110","10001","10001","11110","10100","10010","10001"],
+  'Y':["10001","10001","01010","00100","00100","00100","00100"],
+  'T':["11111","00100","00100","00100","00100","00100","00100"],
+  'H':["10001","10001","10001","11111","10001","10001","10001"],
+  'N':["10001","11001","10101","10011","10001","10001","10001"],
+  'I':["01110","00100","00100","00100","00100","00100","01110"],
+  'B':["11110","10001","10001","11110","10001","10001","11110"],
+  'K':["10001","10010","10100","11000","10100","10010","10001"],
+  'W':["10001","10001","10001","10101","10101","11011","10001"],
+  'F':["11111","10000","10000","11110","10000","10000","10000"],
+  '%':["11001","11010","00100","01000","01011","10011","00000"],
   '°':["01100","10010","10010","01100","00000","00000","00000"],
+  '*':["01100","10010","10010","01100","00000","00000","00000"],
   ' ':["00000","00000","00000","00000","00000","00000","00000"],
+  ':':["00000","00100","00100","00000","00100","00100","00000"],
+  '.':["00000","00000","00000","00000","00000","01100","01100"],
+  '-':["00000","00000","00000","11111","00000","00000","00000"],
+  '+':["00000","00100","00100","11111","00100","00100","00000"],
 };
 
 function dm(text, cell, cls){
-  const chars = [...String(text)];
+  const chars = [...String(text).toUpperCase()];
   const GAP = 1;
   const cols = chars.length * 5 + Math.max(0, chars.length - 1) * GAP;
   const rows = 7;
@@ -717,15 +762,18 @@ function dm(text, cell, cls){
     const ox = i * (5 + GAP);
     for (let y = 0; y < rows; y++){
       for (let x = 0; x < 5; x++){
-        if (g[y][x] === '1'){
-          dots += `<circle cx="${ox + x + 0.5}" cy="${y + 0.5}" r="0.45"/>`;
+        const isLit = g[y] && g[y][x] === '1';
+        if (isLit) {
+          dots += `<circle cx="${ox + x + 0.5}" cy="${y + 0.5}" r="0.43" fill="currentColor"/>`;
+        } else {
+          dots += `<circle cx="${ox + x + 0.5}" cy="${y + 0.5}" r="0.32" fill="#181818"/>`;
         }
       }
     }
   });
 
   return `<svg class="${cls||''}" width="${cols*cell}" height="${rows*cell}"`
-       + ` viewBox="0 0 ${cols} ${rows}" fill="currentColor">${dots}</svg>`;
+       + ` viewBox="0 0 ${cols} ${rows}">${dots}</svg>`;
 }
 
 /* ============================================================
@@ -792,6 +840,7 @@ setInterval(() => {
 }, 900);
 
 setInterval(pollHardwareTelemetry, 250);
+pollHardwareTelemetry();
 
 /* ============================================================
    3. SETTINGS STATE
@@ -846,9 +895,9 @@ function faceSingle(which){
     <div class="scr">
       <div class="scr-top">
         <span class="lbl">${label(LBL, S.label)}</span>
-        <span class="meta">${S.temp ? temp + '°C' : ''}</span>
+        <span class="meta">${S.temp ? dm(temp + '*C', 5) : ''}</span>
       </div>
-      <div class="scr-mid">${dm(pct, 15)}</div>
+      <div class="scr-mid">${dm(pct, 14)}</div>
       <div class="scr-bot">
         <div style="flex:1">${dotbar(pct, 28)}</div>
         <div class="note">${S.units ? '%' : ''}</div>
@@ -867,15 +916,33 @@ function faceDual(){
       </div>
       <div class="dual-grid">
         <div class="dual-col">
-          <div class="lbl">${label('CPU', S.label)}</div>
-          ${dm(c, 9)}
-          <div class="sub">${S.temp ? ct + '°C' : ''}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <span class="lbl">${label('CPU', S.label)}</span>
+            <span style="font-size:9px;color:#5a5a5a;font-weight:700">4.2 GHZ</span>
+          </div>
+          ${dm(c, 10)}
+          <div style="width:100%;margin:10px 0">${dotbar(c, 24)}</div>
+          <div style="width:100%;height:1px;background:#1a1a1a;margin:4px 0"></div>
+          ${S.temp ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding-top:4px">
+              <span style="font-size:9px;color:#5a5a5a;font-weight:700;letter-spacing:0.18em">T E M P</span>
+              ${dm(ct + '*C', 5)}
+            </div>` : ''}
         </div>
         <div class="dual-div"></div>
         <div class="dual-col">
-          <div class="lbl">${label('GPU', S.label)}</div>
-          ${dm(g, 9)}
-          <div class="sub">${S.temp ? gt + '°C' : ''}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <span class="lbl">${label('GPU', S.label)}</span>
+            <span style="font-size:9px;color:#5a5a5a;font-weight:700">185 W</span>
+          </div>
+          ${dm(g, 10)}
+          <div style="width:100%;margin:10px 0">${dotbar(g, 24)}</div>
+          <div style="width:100%;height:1px;background:#1a1a1a;margin:4px 0"></div>
+          ${S.temp ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding-top:4px">
+              <span style="font-size:9px;color:#5a5a5a;font-weight:700;letter-spacing:0.18em">T E M P</span>
+              ${dm(gt + '*C', 5)}
+            </div>` : ''}
         </div>
       </div>
     </div>`;
@@ -888,19 +955,19 @@ function faceRam(){
     <div class="scr stack">
       <div class="scr-top">
         <span class="lbl">${label('MEMORY', S.label)}</span>
-        <span class="meta">${S.temp ? Math.round(DATA.ramT)+'°C' : ''}</span>
+        <span class="meta">${S.temp ? dm(Math.round(DATA.ramT)+'*C', 5) : ''}</span>
       </div>
       <div class="scr-mid" style="flex:0 0 auto;margin:8px 0 0">${dm(pct, 12)}</div>
-      <div class="bar-stack">
-        <div class="row-line">
-          <span class="rl">${label('USED', S.label)}</span>
-          <div class="rb"><i style="width:${pct}%"></i></div>
-          <span class="rv">${S.units ? used+'G' : ''}</span>
+      <div class="bar-stack" style="gap:14px;margin-top:12px">
+        <div class="row-line" style="display:flex;align-items:center;gap:12px">
+          <span class="rl" style="width:40px">${label('USED', S.label)}</span>
+          <div style="flex:1">${dotbar(pct, 20)}</div>
+          <span class="rv" style="width:50px;text-align:right">${S.units ? used+'G' : ''}</span>
         </div>
-        <div class="row-line">
-          <span class="rl">${label('FREE', S.label)}</span>
-          <div class="rb"><i style="width:${100-pct}%"></i></div>
-          <span class="rv">${S.units ? (32-used).toFixed(1)+'G' : ''}</span>
+        <div class="row-line" style="display:flex;align-items:center;gap:12px">
+          <span class="rl" style="width:40px">${label('FREE', S.label)}</span>
+          <div style="flex:1">${dotbar(100 - pct, 20)}</div>
+          <span class="rv" style="width:50px;text-align:right">${S.units ? (32-used).toFixed(1)+'G' : ''}</span>
         </div>
       </div>
     </div>`;
@@ -914,17 +981,17 @@ function faceDisk(){
         <span class="lbl">${label('STORAGE', S.label)}</span>
         <span class="meta">ACTIVE</span>
       </div>
-      <div class="scr-mid" style="flex:0 0 auto;margin:6px 0 0">${dm(pct, 11)}</div>
-      <div class="bar-stack">
-        <div class="row-line">
-          <span class="rl">READ</span>
-          <div class="rb"><i style="width:${Math.min(100, DATA.diskR/4)}%"></i></div>
-          <span class="rv">${S.units ? Math.round(DATA.diskR)+'M' : ''}</span>
+      <div class="scr-mid" style="flex:0 0 auto;margin:6px 0 0">${dm(pct, 12)}</div>
+      <div class="bar-stack" style="gap:14px;margin-top:12px">
+        <div class="row-line" style="display:flex;align-items:center;gap:12px">
+          <span class="rl" style="width:40px">READ</span>
+          <div style="flex:1">${dotbar(Math.min(100, DATA.diskR/4), 20)}</div>
+          <span class="rv" style="width:50px;text-align:right">${S.units ? Math.round(DATA.diskR)+'M' : ''}</span>
         </div>
-        <div class="row-line">
-          <span class="rl">WRITE</span>
-          <div class="rb"><i style="width:${Math.min(100, DATA.diskW/2)}%"></i></div>
-          <span class="rv">${S.units ? Math.round(DATA.diskW)+'M' : ''}</span>
+        <div class="row-line" style="display:flex;align-items:center;gap:12px">
+          <span class="rl" style="width:40px">WRITE</span>
+          <div style="flex:1">${dotbar(Math.min(100, DATA.diskW/2), 20)}</div>
+          <span class="rv" style="width:50px;text-align:right">${S.units ? Math.round(DATA.diskW)+'M' : ''}</span>
         </div>
       </div>
     </div>`;
@@ -936,16 +1003,16 @@ function faceThermal(){
     <div class="scr thermal">
       <div class="scr-top">
         <span class="lbl">${label('THERMAL', S.label)}</span>
-        <span class="meta">${S.units ? '°C' : ''}</span>
+        <span class="meta">${S.units ? '*C' : ''}</span>
       </div>
       <div class="thermal-row">
         <div class="thermal-item">
           <span class="tag">CPU</span>
-          ${dm(ct, 11)}
+          ${dm(ct + '*C', 9)}
         </div>
         <div class="thermal-item">
           <span class="tag">GPU</span>
-          ${dm(gt, 11)}
+          ${dm(gt + '*C', 9)}
         </div>
       </div>
     </div>`;
@@ -960,11 +1027,11 @@ function faceNetwork(){
       </div>
       <div class="net-grid">
         <div class="net-line">
-          <span class="nl">↑ UP</span>
+          <span class="nl">UP</span>
           <span class="nv">${dm(Math.round(DATA.netUp), 7)}</span>
         </div>
         <div class="net-line">
-          <span class="nl">↓ DOWN</span>
+          <span class="nl">DOWN</span>
           <span class="nv">${dm(Math.round(DATA.netDn), 7)}</span>
         </div>
       </div>
@@ -980,8 +1047,8 @@ function faceMinimal(){
   return `
     <div class="scr minimal">
       <div class="bigwrap">
-        ${dm(pct, 18)}
-        <div class="smallnote">${label('CPU %', S.label)}</div>
+        ${dm(pct, 16)}
+        <div class="smallnote" style="margin-top:16px">${label('CPU', S.label)}</div>
       </div>
     </div>`;
 }

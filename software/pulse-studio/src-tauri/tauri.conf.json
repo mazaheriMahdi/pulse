@@ -7,8 +7,10 @@
     "frontendDist": "../ui"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "PULSE STUDIO — Gadget Control Software",
         "width": 1380,
         "height": 860,
