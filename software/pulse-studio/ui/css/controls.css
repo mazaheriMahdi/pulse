@@ -1,0 +1,244 @@
+/* ============================================================
+   PULSE STUDIO — Control Components & Input Elements
+   ============================================================ */
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.group-title {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.26em;
+  color: var(--text-dim);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-title .val-hint {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-size: 10px;
+}
+
+/* ── COLOR SWATCHES ─────────────────────────────────────────── */
+.swatches-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.swatch-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--line-regular);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s, border-color 0.15s;
+  background: #ffffff;
+}
+
+.swatch-btn:hover {
+  transform: scale(1.1);
+}
+
+.swatch-btn.active {
+  border-color: #ffffff;
+}
+
+.swatch-btn.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+}
+
+.swatch-btn[data-color="#ffffff"] { background: var(--brand-white); }
+.swatch-btn[data-color="#d71921"] { background: var(--brand-red); }
+.swatch-btn[data-color="#ff5a00"] { background: var(--brand-orange); }
+.swatch-btn[data-color="#2ee6c5"] { background: var(--brand-cyan); }
+.swatch-btn[data-color="#8b8cf9"] { background: var(--brand-purple); }
+.swatch-btn[data-color="#ffc247"] { background: var(--brand-gold); }
+
+/* ── SEGMENTED BUTTONS ───────────────────────────────────────── */
+.segmented-control {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--line-regular);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.segmented-control button {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line-regular);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.segmented-control button:last-child {
+  border-right: 0;
+}
+
+.segmented-control button:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.segmented-control button.active {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* ── SLIDERS ─────────────────────────────────────────────────── */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-container input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1 1 auto;
+  height: 2px;
+  background: var(--line-strong);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* ── SWITCH TOGGLES ─────────────────────────────────────────── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.toggle-row .toggle-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.toggle-switch {
+  width: 32px;
+  height: 16px;
+  background: var(--bg-card-active);
+  border: 1px solid var(--line-regular);
+  border-radius: 999px;
+  position: relative;
+  transition: all 0.15s;
+}
+
+.toggle-switch .knob {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.toggle-row.active .toggle-label {
+  color: var(--text-primary);
+}
+
+.toggle-row.active .toggle-switch {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.toggle-row.active .toggle-switch .knob {
+  transform: translateX(14px);
+  background: #000000;
+}
+
+/* ── BUTTONS ─────────────────────────────────────────────────── */
+.btn-action {
+  width: 100%;
+  padding: 11px 0;
+  border-radius: 3px;
+  border: 1px solid var(--line-regular);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-action:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--line-strong);
+}
+
+.btn-flash {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.btn-flash:hover {
+  background: #e8e8e8;
+  border-color: #e8e8e8;
+}
+
+.btn-flash .flash-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--brand-red);
+  transition: width 0.08s linear;
+  opacity: 0.25;
+}
+
+.btn-flash.busy {
+  pointer-events: none;
+}

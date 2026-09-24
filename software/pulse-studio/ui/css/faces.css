@@ -1,0 +1,241 @@
+/* ============================================================
+   PULSE STUDIO — Face Render Layouts
+   Matches 480×320 Hardware TFT LCD pixel-for-pixel
+   ============================================================ */
+
+.face-viewport {
+  width: 480px;
+  height: 320px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  color: var(--acc, #ffffff);
+  background: #000000;
+  position: relative;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────── */
+.face-topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  line-height: 1;
+}
+
+.face-topbar .header-tag {
+  color: var(--acc, #ffffff);
+}
+
+.face-topbar .header-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #6a6a6a;
+}
+
+/* ── HAIRLINE RULES ──────────────────────────────────────────── */
+.hairline-h {
+  width: 100%;
+  height: 1px;
+  background: #262626;
+  margin: 10px 0;
+  flex: 0 0 1px;
+}
+
+.hairline-v {
+  width: 1px;
+  background: #262626;
+  height: 100%;
+  flex: 0 0 1px;
+}
+
+/* ── CIRCULAR DOT BAR ────────────────────────────────────────── */
+.dotbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.dotbar-28 {
+  display: grid;
+  grid-template-columns: repeat(28, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.dotbar-24 {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  width: 100%;
+}
+
+.dotbar-20 {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.dotbar-28 i,
+.dotbar-24 i,
+.dotbar-20 i {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: #1c1c1c;
+  display: block;
+}
+
+.dotbar-28 i.on,
+.dotbar-24 i.on,
+.dotbar-20 i.on {
+  background: var(--acc, #ffffff);
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.dotbar-24 i.on.red,
+.dotbar-28 i.on.red {
+  background: var(--brand-red);
+}
+
+/* ── DUAL LOAD LAYOUT (THE GOLD STANDARD) ─────────────────────── */
+.dual-container {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+  margin-top: 4px;
+}
+
+.dual-column {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  justify-content: space-between;
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.column-header .col-title {
+  color: var(--acc, #ffffff);
+}
+
+.column-header .col-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #6a6a6a;
+}
+
+.val-center-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.temp-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.temp-footer-row .lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #6a6a6a;
+}
+
+/* ── SINGLE GAUGE LAYOUT (CPU / GPU GRID) ─────────────────────── */
+.single-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.single-val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.single-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.single-bottom-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.single-bottom-block .sub-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #6a6a6a;
+}
+
+/* ── MEMORY STACK LAYOUT ─────────────────────────────────────── */
+.memory-stack {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  margin: 8px 0;
+}
+
+.memory-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.memory-row .mem-lbl {
+  width: 44px;
+  flex: 0 0 44px;
+}
+
+.memory-row .mem-val {
+  width: 54px;
+  flex: 0 0 54px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #6a6a6a;
+}
+
+/* ── THERMAL DUAL LAYOUT ─────────────────────────────────────── */
+.thermal-dual-container {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+  margin-top: 4px;
+}
+
+/* ── MINIMAL LAYOUT ──────────────────────────────────────────── */
+.minimal-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 0;
+}
