@@ -177,3 +177,53 @@ pub fn draw_dot_circle_7px<D: Display>(display: &mut D, x: u16, y: u16, color: C
     display.fill_rect(x + 1, y + 5, 5, 1, color);
     display.fill_rect(x + 2, y + 6, 3, 1, color);
 }
+
+/// Draws an arrow pointing up of size 5x7.
+pub fn draw_arrow_up<D: Display>(display: &mut D, x: u16, y: u16, color: Color) {
+    display.fill_rect(x + 2, y + 0, 1, 1, color);
+    display.fill_rect(x + 1, y + 1, 3, 1, color);
+    display.fill_rect(x + 0, y + 2, 5, 1, color);
+    display.fill_rect(x + 2, y + 3, 1, 4, color);
+}
+
+/// Draws an arrow pointing down of size 5x7.
+pub fn draw_arrow_down<D: Display>(display: &mut D, x: u16, y: u16, color: Color) {
+    display.fill_rect(x + 2, y + 0, 1, 4, color);
+    display.fill_rect(x + 0, y + 4, 5, 1, color);
+    display.fill_rect(x + 1, y + 5, 3, 1, color);
+    display.fill_rect(x + 2, y + 6, 1, 1, color);
+}
+
+/// Draws a 5×7 NDot digit at cell size 11 with full unlit dot matrix rasterization.
+/// Every one of the 35 dots in the 5×7 grid is drawn:
+/// - ON dots glow in `fg` (9px circular dot)
+/// - OFF dots faintly appear in `dot_off` (9px circular dot)
+pub fn draw_ndot_matrix_digit_11<D: Display>(
+    display: &mut D,
+    x: u16,
+    y: u16,
+    c: u8,
+    fg: Color,
+    dot_off: Color,
+    bg: Color,
+) {
+    let glyph = get_ndot_glyph(c);
+
+    for row in 0..7 {
+        let row_bits = glyph[row as usize];
+        let cy = y + row * 11;
+
+        for col in 0..5 {
+            let is_on = ((row_bits >> (4 - col)) & 1) != 0;
+            let cx = x + col * 11;
+            let dot_col = if is_on { fg } else { dot_off };
+
+            display.fill_rect(cx, cy, 11, 11, bg);
+            display.fill_rect(cx + 4, cy + 1, 3, 1, dot_col);
+            display.fill_rect(cx + 2, cy + 2, 7, 2, dot_col);
+            display.fill_rect(cx + 1, cy + 4, 9, 3, dot_col);
+            display.fill_rect(cx + 2, cy + 7, 7, 2, dot_col);
+            display.fill_rect(cx + 4, cy + 9, 3, 1, dot_col);
+        }
+    }
+}

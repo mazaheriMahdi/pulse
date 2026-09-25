@@ -7,7 +7,10 @@
 
 use crate::display::Color;
 use crate::font::draw_ascii;
-use crate::ndot::{draw_dot_circle_7px, draw_ndot_char, draw_ndot_str};
+use crate::ndot::{
+    draw_arrow_down, draw_arrow_up, draw_dot_circle_5px, draw_dot_circle_7px,
+    draw_ndot_char, draw_ndot_matrix_digit_11, draw_ndot_str,
+};
 use crate::traits::{DelayMs, Display};
 use gadget_common::{ConfigurationPacket, TelemetryPacket};
 
@@ -341,21 +344,30 @@ impl Dashboard {
         line: Color,
         dot_off: Color,
     ) {
+        let right_edge = WIDTH - PAD_X; // 456
+
         if self.config.show_label() {
             draw_ndot_str(display, PAD_X, HEAD_Y, b"NETWORK", 3, fg, bg);
-            draw_ascii(display, WIDTH - PAD_X - 28, HEAD_Y + 7, b"ETH0", dim, bg, 1);
+            draw_ascii(display, right_edge - 24, HEAD_Y + 7, b"WLO1", dim, bg, 1);
         }
 
         display.draw_hline(PAD_X, RULE1_Y, WIDTH - (2 * PAD_X), line);
 
-        // Column headers: ^ UP on left, v DOWN on right
-        draw_ascii(display, PAD_X, 58, b"^ UP", fg, bg, 1);
-        let right_x = WIDTH - PAD_X - 116;
-        draw_ascii(display, right_x + 50, 58, b"v DOWN", fg, bg, 1);
+        // Column headers: ↑ UP on left, DOWN ↓ on right
+        draw_arrow_up(display, PAD_X, 58, fg);
+        draw_ascii(display, PAD_X + 10, 58, b"UP", fg, bg, 1);
+
+        draw_ascii(display, right_edge - 36, 58, b"DOWN", fg, bg, 1);
+        draw_arrow_down(display, right_edge - 6, 58, fg);
+
+        // Initial 00 numerals with full unlit dot matrix
+        self.draw_net_val(display, PAD_X, 76, 0, fg, dot_off, bg);
+        let right_x = right_edge - 116; // 340
+        self.draw_net_val(display, right_x, 76, 0, fg, dot_off, bg);
 
         // Suffixes: MB/S
         draw_ascii(display, PAD_X, 166, b"MB/S", dim, bg, 1);
-        draw_ascii(display, right_x + 80, 166, b"MB/S", dim, bg, 1);
+        draw_ascii(display, right_edge - 24, 166, b"MB/S", dim, bg, 1);
 
         // Shared 28-dot throughput bar
         let bar_w = WIDTH - (2 * PAD_X) - 7;
@@ -368,9 +380,8 @@ impl Dashboard {
 
         // Footer: Peak stats & Online state
         draw_ascii(display, PAD_X, 236, b"PEAK 48 / 212", dim, bg, 1);
-        let st_x = WIDTH - PAD_X - 44;
-        draw_dot_circle_7px(display, st_x - 10, 237, fg);
-        draw_ascii(display, st_x, 236, b"ONLINE", fg, bg, 1);
+        draw_dot_circle_5px(display, right_edge - 46, 237, fg);
+        draw_ascii(display, right_edge - 36, 236, b"ONLINE", fg, bg, 1);
     }
 
     // ── UPDATERS ──────────────────────────────────────────────────────────────
@@ -622,12 +633,12 @@ impl Dashboard {
         let right_x = WIDTH - PAD_X - 116;
 
         if up_val != self.prev_val1 {
-            self.draw_big_val(display, PAD_X, up_val, fg, bg);
+            self.draw_net_val(display, PAD_X, 76, up_val, fg, dot_off, bg);
             self.prev_val1 = up_val;
         }
 
         if dn_val != self.prev_val2 {
-            self.draw_big_val(display, right_x, dn_val, fg, bg);
+            self.draw_net_val(display, right_x, 76, dn_val, fg, dot_off, bg);
             self.prev_val2 = dn_val;
         }
 
@@ -648,9 +659,44 @@ impl Dashboard {
             }
             delay.delay_ms(4);
         }
+
+        if packet.cpu_temp_c != self.prev_temp1 || packet.gpu_temp_c != self.prev_temp2 {
+            let mut buf = [b'P', b'E', b'A', b'K', b' ', b'0', b'0', b' ', b'/', b' ', b'0', b'0', b'0'];
+            let up = packet.cpu_temp_c.min(99);
+            buf[5] = (up / 10) + b'0';
+            buf[6] = (up % 10) + b'0';
+            let dn = packet.gpu_temp_c;
+            buf[10] = (dn / 100) + b'0';
+            buf[11] = ((dn % 100) / 10) + b'0';
+            buf[12] = (dn % 10) + b'0';
+            let (_, _, dim, _, _) = self.get_palette();
+            draw_ascii(display, PAD_X, 236, &buf, dim, bg, 1);
+            self.prev_temp1 = packet.cpu_temp_c;
+            self.prev_temp2 = packet.gpu_temp_c;
+        }
     }
 
     // ── PRIMITIVES ────────────────────────────────────────────────────────────
+
+    /// Draws a dual 2-digit network throughput reading in 11x11 matrix font with full unlit dots.
+    fn draw_net_val<D: Display>(
+        &self,
+        display: &mut D,
+        x: u16,
+        y: u16,
+        val: u8,
+        fg: Color,
+        dot_off: Color,
+        bg: Color,
+    ) {
+        let v = val.min(99);
+        let tens = (v / 10) + b'0';
+        let ones = (v % 10) + b'0';
+
+        draw_ndot_matrix_digit_11(display, x, y, tens, fg, dot_off, bg);
+        display.fill_rect(x + 55, y, 6, 77, bg);
+        draw_ndot_matrix_digit_11(display, x + 61, y, ones, fg, dot_off, bg);
+    }
 
     /// Draws a high-contrast 77px tall numeral using cell = 11 with 9px smooth circular dots.
     fn draw_big_val<D: Display>(&self, display: &mut D, ix: u16, val: u8, fg: Color, bg: Color) {
