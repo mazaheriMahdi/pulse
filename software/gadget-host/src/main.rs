@@ -24,6 +24,16 @@ pub enum IpcMessage {
         gpu: u8,
         gpu_temp: u8,
         battery: u8,
+        #[serde(default)]
+        net_up: u8,
+        #[serde(default)]
+        net_dn: u8,
+        #[serde(default)]
+        peak_up: u8,
+        #[serde(default)]
+        peak_dn: u8,
+        #[serde(default)]
+        iface: String,
     },
     #[serde(rename = "config")]
     Config {
@@ -202,6 +212,127 @@ impl CpuSampler {
     }
 }
 
+/// Parsed network interface statistics from a single /proc/net/dev line
+#[derive(Debug, PartialEq, Eq)]
+pub struct DevLineStats {
+    pub iface: String,
+    pub rx_bytes: u64,
+    pub tx_bytes: u64,
+}
+
+pub fn parse_proc_net_dev_line(line: &str) -> Option<DevLineStats> {
+    let mut parts = line.split(':');
+    let iface = parts.next()?.trim();
+    if iface.is_empty() || iface == "lo" {
+        return None;
+    }
+    let data = parts.next()?;
+    let fields: Vec<&str> = data.split_whitespace().collect();
+    if fields.len() < 9 {
+        return None;
+    }
+    let rx_bytes = fields[0].parse::<u64>().ok()?;
+    let tx_bytes = fields[8].parse::<u64>().ok()?;
+    Some(DevLineStats {
+        iface: iface.to_string(),
+        rx_bytes,
+        tx_bytes,
+    })
+}
+
+pub fn parse_proc_net_dev(content: &str) -> (u64, u64, String) {
+    let mut total_rx = 0u64;
+    let mut total_tx = 0u64;
+    let mut primary_iface = String::new();
+    let mut max_bytes = 0u64;
+
+    for line in content.lines() {
+        if let Some(stats) = parse_proc_net_dev_line(line) {
+            total_rx = total_rx.saturating_add(stats.rx_bytes);
+            total_tx = total_tx.saturating_add(stats.tx_bytes);
+            let combined = stats.rx_bytes.saturating_add(stats.tx_bytes);
+            if combined >= max_bytes {
+                max_bytes = combined;
+                primary_iface = stats.iface;
+            }
+        }
+    }
+
+    if primary_iface.is_empty() {
+        primary_iface = "ETH0".to_string();
+    }
+
+    (total_rx, total_tx, primary_iface.to_uppercase())
+}
+
+struct NetSampler {
+    prev_time: std::time::Instant,
+    prev_rx: u64,
+    prev_tx: u64,
+    peak_up: u8,
+    peak_dn: u8,
+}
+
+impl NetSampler {
+    fn new() -> Self {
+        let (rx, tx, _) = Self::read_net_dev();
+        Self {
+            prev_time: std::time::Instant::now(),
+            prev_rx: rx,
+            prev_tx: tx,
+            peak_up: 48,
+            peak_dn: 212,
+        }
+    }
+
+    fn sample(&mut self) -> (u8, u8, u8, u8, u8, String) {
+        let now = std::time::Instant::now();
+        let (curr_rx, curr_tx, iface) = Self::read_net_dev();
+
+        let elapsed = now.duration_since(self.prev_time).as_secs_f64();
+        let delta_rx = curr_rx.saturating_sub(self.prev_rx);
+        let delta_tx = curr_tx.saturating_sub(self.prev_tx);
+
+        self.prev_time = now;
+        self.prev_rx = curr_rx;
+        self.prev_tx = curr_tx;
+
+        let (net_up, net_dn) = if elapsed > 0.05 {
+            let up_mb_s = (delta_tx as f64 / (1024.0 * 1024.0)) / elapsed;
+            let dn_mb_s = (delta_rx as f64 / (1024.0 * 1024.0)) / elapsed;
+            let up = (up_mb_s.round() as u8).min(99);
+            let dn = (dn_mb_s.round() as u8).min(99);
+            (up, dn)
+        } else {
+            (0, 0)
+        };
+
+        if net_up > self.peak_up {
+            self.peak_up = net_up;
+        }
+        if net_dn > self.peak_dn {
+            self.peak_dn = net_dn;
+        }
+
+        let total_speed = net_up as u32 + net_dn as u32;
+        let pct = if total_speed == 0 {
+            0
+        } else {
+            ((total_speed as f64 / 50.0) * 100.0).clamp(5.0, 100.0).round() as u8
+        };
+
+        (net_up, net_dn, self.peak_up, self.peak_dn, pct, iface)
+    }
+
+    fn read_net_dev() -> (u64, u64, String) {
+        if let Ok(content) = fs::read_to_string("/proc/net/dev") {
+            parse_proc_net_dev(&content)
+        } else {
+            (0, 0, "ETH0".to_string())
+        }
+    }
+}
+
 fn read_ram_percent() -> u8 {
     fs::read_to_string("/proc/meminfo")
         .ok()
@@ -350,16 +481,18 @@ pub fn should_fallback_port(port_name: &str, is_not_found: bool) -> bool {
 
 fn open_serial_port(port_name: &str, baud: u32) -> Option<Box<dyn serialport::SerialPort>> {
     let mut candidates = vec![port_name.to_string()];
-    for fallback in &["/dev/ttyUSB1", "/dev/ttyUSB0", "/dev/ttyACM0", "/dev/ttyACM1"] {
-        if !candidates.iter().any(|c| c == *fallback) {
-            candidates.push(fallback.to_string());
+    if port_name.starts_with("/dev/ttyUSB") || port_name.starts_with("/dev/ttyACM") {
+        for fallback in &["/dev/ttyUSB1", "/dev/ttyUSB0", "/dev/ttyACM0", "/dev/ttyACM1"] {
+            if !candidates.iter().any(|c| c == *fallback) {
+                candidates.push(fallback.to_string());
+            }
         }
-    }
 
-    if let Ok(available) = serialport::available_ports() {
-        for p in available {
-            if !candidates.contains(&p.port_name) {
-                candidates.push(p.port_name);
+        if let Ok(available) = serialport::available_ports() {
+            for p in available {
+                if !candidates.contains(&p.port_name) {
+                    candidates.push(p.port_name);
+                }
             }
         }
     }
@@ -497,6 +630,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let mut cpu_sampler = CpuSampler::new();
+    let mut net_sampler = NetSampler::new();
+    let mut current_face_id: u8 = 2;
     // Warm up CPU sampler
     sleep(Duration::from_millis(200));
 
@@ -509,6 +644,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "\n[IPC] Received configuration from Studio: Face {}, Accent {}, Brightness {}%, Refresh {}Hz",
                 cfg.face_id, cfg.accent_color_id, cfg.brightness, cfg.refresh_hz
             );
+            current_face_id = cfg.face_id;
             if cfg.refresh_hz > 0 {
                 interval_ms = (1000 / cfg.refresh_hz as u64).max(50);
             }
@@ -528,13 +664,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ram = read_ram_percent();
         let (gpu, gpu_temp) = read_gpu_metrics();
         let bat = read_battery_percent();
+        let (net_up, net_dn, peak_up, peak_dn, throughput_pct, iface) = net_sampler.sample();
 
-        let packet = TelemetryPacket::new(cpu, cpu_temp, ram, gpu, gpu_temp, bat);
+        let packet = if current_face_id == 6 {
+            TelemetryPacket::new(net_up, peak_up, throughput_pct, net_dn, peak_dn, 100)
+        } else {
+            TelemetryPacket::new(cpu, cpu_temp, ram, gpu, gpu_temp, bat)
+        };
 
-        print!(
-            "\r[Metrics] CPU: {:>3}% ({:>2}°C) | GPU: {:>3}% ({:>2}°C) | RAM: {:>3}% | Bat: {:>3}%",
-            cpu, cpu_temp, gpu, gpu_temp, ram, bat
-        );
+        if current_face_id == 6 {
+            print!(
+                "\r[Metrics:NET] UP: {:>2} MB/s (Peak {:>2}) | DN: {:>2} MB/s (Peak {:>2}) | Bar: {:>3}% | {}",
+                net_up, peak_up, net_dn, peak_dn, throughput_pct, iface
+            );
+        } else {
+            print!(
+                "\r[Metrics] CPU: {:>3}% ({:>2}°C) | GPU: {:>3}% ({:>2}°C) | RAM: {:>3}% | Bat: {:>3}%",
+                cpu, cpu_temp, gpu, gpu_temp, ram, bat
+            );
+        }
         std::io::stdout().flush().ok();
 
         // Broadcast telemetry to connected Studio IPC clients
@@ -545,6 +693,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             gpu,
             gpu_temp,
             battery: bat,
+            net_up,
+            net_dn,
+            peak_up,
+            peak_dn,
+            iface: iface.clone(),
         };
         if let Ok(json_line) = serde_json::to_string(&tele_msg) {
             let payload = json_line + "\n";
@@ -788,5 +941,42 @@ MemAvailable:    1000000 kB
     fn test_open_serial_port_nonexistent() {
         let port = open_serial_port("/dev/nonexistent_test_device_9876", 57600);
         assert!(port.is_none());
+    }
+
+    #[test]
+    fn test_parse_proc_net_dev_line_valid() {
+        let line = "  wlo1: 576606942 1487322    0    0    0     0          0         0 2818401469 2091362    0    4    0     0       0          0";
+        let stats = parse_proc_net_dev_line(line).expect("Should parse wlo1 stats");
+        assert_eq!(stats.iface, "wlo1");
+        assert_eq!(stats.rx_bytes, 576606942);
+        assert_eq!(stats.tx_bytes, 2818401469);
+    }
+
+    #[test]
+    fn test_parse_proc_net_dev_line_ignores_lo() {
+        let line = "    lo: 385309018   93822    0    0    0     0          0         0 385309018   93822    0    0    0     0       0          0";
+        assert!(parse_proc_net_dev_line(line).is_none());
+    }
+
+    #[test]
+    fn test_parse_proc_net_dev_line_malformed() {
+        assert!(parse_proc_net_dev_line("").is_none());
+        assert!(parse_proc_net_dev_line("eth0: 1 2 3").is_none());
+        assert!(parse_proc_net_dev_line("eth0: abc def").is_none());
+    }
+
+    #[test]
+    fn test_parse_proc_net_dev_full() {
+        let content = "\
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo: 385309018   93822    0    0    0     0          0         0 385309018   93822    0    0    0     0       0          0
+  eno1:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+  wlo1: 5000000 1487322    0    0    0     0          0         0 20000000 2091362    0    4    0     0       0          0
+";
+        let (rx, tx, iface) = parse_proc_net_dev(content);
+        assert_eq!(rx, 5000000);
+        assert_eq!(tx, 20000000);
+        assert_eq!(iface, "WLO1");
     }
 }

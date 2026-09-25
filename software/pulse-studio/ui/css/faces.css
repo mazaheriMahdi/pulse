@@ -6,6 +6,7 @@
 .face-viewport {
   width: 480px;
   height: 320px;
+  box-sizing: border-box;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -239,3 +240,125 @@
   justify-content: space-around;
   padding: 10px 0;
 }
+
+/* ── NETWORK USAGE LAYOUT ────────────────────────────────────── */
+.net-viewport {
+  justify-content: space-between;
+  padding: 22px 24px;
+}
+
+.net-viewport .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.net-viewport .head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.net-viewport .tag {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #888888;
+  text-transform: uppercase;
+}
+
+.net-viewport .rule {
+  height: 1px;
+  background: #1c1c1c;
+  width: 100%;
+}
+
+.net-viewport .cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  padding: 6px 0 0 0;
+}
+
+.net-viewport .col {
+  display: flex;
+  flex-direction: column;
+}
+
+.net-viewport .col.right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.net-viewport .col-lbl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.net-viewport .arrow {
+  font-size: 13px;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.net-viewport .numeral-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1;
+}
+
+.net-viewport .col.right .numeral-wrap {
+  justify-content: flex-end;
+}
+
+.net-viewport .unit {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #777777;
+  margin-top: 6px;
+}
+
+.net-viewport .bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.net-viewport .foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #777777;
+}
+
+.net-viewport .foot-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.net-viewport .status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+}
+
+.net-viewport .status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+

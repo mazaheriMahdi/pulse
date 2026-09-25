@@ -123,6 +123,7 @@ impl Dashboard {
             3 => self.draw_memory_shell(display, bg, fg, dim, line, dot_off),
             4 => self.draw_thermal_shell(display, bg, fg, dim, line, dot_off),
             5 => self.draw_minimal_shell(display, bg, dim, line, dot_off),
+            6 => self.draw_network_shell(display, bg, fg, dim, line, dot_off),
             _ => self.draw_dual_shell(display, bg, fg, dim, line, dot_off),
         }
 
@@ -147,6 +148,7 @@ impl Dashboard {
             3 => self.update_memory(display, packet.ram_percent, packet.cpu_temp_c),
             4 => self.update_thermal(display, delay, packet.cpu_temp_c, packet.gpu_temp_c),
             5 => self.update_minimal(display, delay, packet.cpu_percent),
+            6 => self.update_network(display, delay, packet),
             _ => self.update_dual(display, delay, packet),
         }
 
@@ -328,6 +330,47 @@ impl Dashboard {
 
         let lcx = (WIDTH - 50) / 2;
         draw_ndot_str(display, lcx, BOT_VAL_Y, b"LOAD", 3, dim, bg);
+    }
+
+    fn draw_network_shell<D: Display>(
+        &self,
+        display: &mut D,
+        bg: Color,
+        fg: Color,
+        dim: Color,
+        line: Color,
+        dot_off: Color,
+    ) {
+        if self.config.show_label() {
+            draw_ndot_str(display, PAD_X, HEAD_Y, b"NETWORK", 3, fg, bg);
+            draw_ascii(display, WIDTH - PAD_X - 28, HEAD_Y + 7, b"ETH0", dim, bg, 1);
+        }
+
+        display.draw_hline(PAD_X, RULE1_Y, WIDTH - (2 * PAD_X), line);
+
+        // Column headers: ^ UP on left, v DOWN on right
+        draw_ascii(display, PAD_X, 58, b"^ UP", fg, bg, 1);
+        let right_x = WIDTH - PAD_X - 116;
+        draw_ascii(display, right_x + 50, 58, b"v DOWN", fg, bg, 1);
+
+        // Suffixes: MB/S
+        draw_ascii(display, PAD_X, 166, b"MB/S", dim, bg, 1);
+        draw_ascii(display, right_x + 80, 166, b"MB/S", dim, bg, 1);
+
+        // Shared 28-dot throughput bar
+        let bar_w = WIDTH - (2 * PAD_X) - 7;
+        for i in 0..S_BAR_DOTS {
+            let dx = PAD_X + ((i as u32 * bar_w as u32) / (S_BAR_DOTS as u32 - 1)) as u16;
+            draw_dot_circle_7px(display, dx, 194, dot_off);
+        }
+
+        display.draw_hline(PAD_X, 218, WIDTH - (2 * PAD_X), line);
+
+        // Footer: Peak stats & Online state
+        draw_ascii(display, PAD_X, 236, b"PEAK 48 / 212", dim, bg, 1);
+        let st_x = WIDTH - PAD_X - 44;
+        draw_dot_circle_7px(display, st_x - 10, 237, fg);
+        draw_ascii(display, st_x, 236, b"ONLINE", fg, bg, 1);
     }
 
     // ── UPDATERS ──────────────────────────────────────────────────────────────
@@ -562,6 +605,48 @@ impl Dashboard {
                 draw_dot_circle_7px(display, dx, BAR_Y, dot_off);
             }
             delay.delay_ms(8);
+        }
+    }
+
+    fn update_network<D: Display, DELAY: DelayMs>(
+        &mut self,
+        display: &mut D,
+        delay: &mut DELAY,
+        packet: TelemetryPacket,
+    ) {
+        let (bg, fg, _, _, dot_off) = self.get_palette();
+        let up_val = packet.cpu_percent;
+        let dn_val = packet.gpu_percent;
+        let throughput = packet.ram_percent;
+
+        let right_x = WIDTH - PAD_X - 116;
+
+        if up_val != self.prev_val1 {
+            self.draw_big_val(display, PAD_X, up_val, fg, bg);
+            self.prev_val1 = up_val;
+        }
+
+        if dn_val != self.prev_val2 {
+            self.draw_big_val(display, right_x, dn_val, fg, bg);
+            self.prev_val2 = dn_val;
+        }
+
+        let target = ((throughput.min(100) as u32 * S_BAR_DOTS as u32 + 50) / 100) as u8;
+        let bar_w = WIDTH - (2 * PAD_X) - 7;
+        let is_hot = throughput >= 85;
+        let active_col = if is_hot { Color::new(215, 25, 33) } else { fg };
+
+        while self.curr_dots1 != target {
+            if self.curr_dots1 < target {
+                let dx = PAD_X + ((self.curr_dots1 as u32 * bar_w as u32) / (S_BAR_DOTS as u32 - 1)) as u16;
+                draw_dot_circle_7px(display, dx, 194, active_col);
+                self.curr_dots1 += 1;
+            } else {
+                self.curr_dots1 -= 1;
+                let dx = PAD_X + ((self.curr_dots1 as u32 * bar_w as u32) / (S_BAR_DOTS as u32 - 1)) as u16;
+                draw_dot_circle_7px(display, dx, 194, dot_off);
+            }
+            delay.delay_ms(4);
         }
     }
 

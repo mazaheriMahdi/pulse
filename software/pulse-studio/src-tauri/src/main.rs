@@ -22,6 +22,16 @@ pub struct TelemetryData {
     pub gpu: u8,
     pub gpu_temp: u8,
     pub battery: u8,
+    #[serde(default)]
+    pub net_up: u8,
+    #[serde(default)]
+    pub net_dn: u8,
+    #[serde(default)]
+    pub peak_up: u8,
+    #[serde(default)]
+    pub peak_dn: u8,
+    #[serde(default)]
+    pub iface: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -166,8 +176,7 @@ fn send_config(config: StudioConfig) -> Result<String, String> {
         "ram" => 3,
         "thermal" => 4,
         "minimal" => 5,
-        "disk" => 3,
-        "network" => 0,
+        "network" => 6,
         _ => 2,
     };
 
@@ -344,6 +353,12 @@ fn main() {
                                             val.get("gpu_temp").and_then(|v| v.as_u64()),
                                             val.get("battery").and_then(|v| v.as_u64()),
                                         ) {
+                                            let net_up = val.get("net_up").and_then(|v| v.as_u64()).unwrap_or(0) as u8;
+                                            let net_dn = val.get("net_dn").and_then(|v| v.as_u64()).unwrap_or(0) as u8;
+                                            let peak_up = val.get("peak_up").and_then(|v| v.as_u64()).unwrap_or(48) as u8;
+                                            let peak_dn = val.get("peak_dn").and_then(|v| v.as_u64()).unwrap_or(212) as u8;
+                                            let iface = val.get("iface").and_then(|v| v.as_str()).unwrap_or("ETH0").to_string();
+
                                             let data = TelemetryData {
                                                 cpu: cpu as u8,
                                                 cpu_temp: cpu_t as u8,
@@ -351,6 +366,11 @@ fn main() {
                                                 gpu: gpu as u8,
                                                 gpu_temp: gpu_t as u8,
                                                 battery: bat as u8,
+                                                net_up,
+                                                net_dn,
+                                                peak_up,
+                                                peak_dn,
+                                                iface,
                                             };
                                             if let Ok(mut t) = tele_clone.lock() {
                                                 *t = Some(data);

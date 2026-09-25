@@ -13,6 +13,11 @@ function pad2(num) {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
+function formatVal(num) {
+  const n = Math.max(0, Math.round(num || 0));
+  return n < 10 ? `0${n}` : `${n}`;
+}
+
 /**
  * CPU / GPU Grid (Single Gauge Layout)
  */
@@ -331,6 +336,80 @@ export function renderMinimal(telemetry, settings) {
 }
 
 /**
+ * Network Usage Layout (Upload + Download)
+ * Nothing × Teenage Engineering design language
+ */
+export function renderNetwork(telemetry, settings) {
+  const showLabel = settings.label !== false;
+  const showUnits = settings.units !== false;
+
+  const upVal = telemetry.netUp !== undefined ? telemetry.netUp : 12;
+  const dnVal = telemetry.netDn !== undefined ? telemetry.netDn : 84;
+  const peakUp = telemetry.peakUp !== undefined ? telemetry.peakUp : 48;
+  const peakDn = telemetry.peakDn !== undefined ? telemetry.peakDn : 212;
+  const iface = (telemetry.iface || 'ETH0').toUpperCase();
+
+  const totalSpeed = upVal + dnVal;
+  const throughputPct = totalSpeed === 0 ? 0 : Math.min(100, Math.round((totalSpeed / 50) * 100));
+  const isHot = throughputPct >= 85;
+
+  const headerHtml = showLabel
+    ? `<div class="head">
+        <div class="head-left">
+          ${renderNdot('NETWORK', 3)}
+        </div>
+        <div class="tag">${iface}</div>
+      </div>`
+    : '';
+
+  const unitsUp = showUnits ? `<div class="unit">MB/S</div>` : '';
+  const unitsDn = showUnits ? `<div class="unit">MB/S</div>` : '';
+
+  return `
+    <div class="face-viewport net-viewport">
+      ${headerHtml}
+      <div class="rule"></div>
+
+      <div class="cols">
+        <div class="col">
+          <div class="col-lbl"><span class="arrow up">↑</span><span>UP</span></div>
+          <div class="numeral-wrap">
+            ${renderNdot(pad2(upVal), 11, 'big-num')}
+          </div>
+          ${unitsUp}
+        </div>
+
+        <div class="col right">
+          <div class="col-lbl"><span>DOWN</span><span class="arrow dn">↓</span></div>
+          <div class="numeral-wrap">
+            ${renderNdot(pad2(dnVal), 11, 'big-num')}
+          </div>
+          ${unitsDn}
+        </div>
+      </div>
+
+      <div class="bar-wrap">
+        <div class="dotbar-container">
+          ${renderDotBar(throughputPct, 28, isHot)}
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="foot">
+        <div class="foot-left">
+          <span>PEAK ${formatVal(peakUp)} / ${formatVal(peakDn)}</span>
+        </div>
+        <div class="status">
+          <span class="status-dot"></span>
+          <span>ONLINE</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Master face router
  */
 export function renderFace(faceId, settings, telemetry) {
@@ -346,6 +425,8 @@ export function renderFace(faceId, settings, telemetry) {
       return renderThermal(telemetry, settings);
     case 'minimal':
       return renderMinimal(telemetry, settings);
+    case 'network':
+      return renderNetwork(telemetry, settings);
     case 'dual':
     default:
       return renderDualLoad(telemetry, settings);

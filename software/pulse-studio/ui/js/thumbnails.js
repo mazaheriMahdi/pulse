@@ -170,6 +170,35 @@ export function renderThumbnail(faceId, accentColor = '#ffffff') {
         </svg>
       `;
 
+    case 'network':
+      return `
+        <svg viewBox="0 0 120 80" width="100%" height="100%" style="display:block;">
+          <text x="10" y="14" fill="${accentColor}" font-family="monospace" font-size="7" font-weight="bold">NETWORK</text>
+          <text x="88" y="14" fill="${dimCol}" font-family="monospace" font-size="5">ETH0</text>
+          <line x1="8" y1="18" x2="112" y2="18" stroke="${lineCol}" stroke-width="1"/>
+
+          <!-- Upload col -->
+          <text x="10" y="27" fill="${accentColor}" font-family="monospace" font-size="5" font-weight="bold">↑ UP</text>
+          <text x="10" y="44" fill="${accentColor}" font-family="monospace" font-size="16" font-weight="900" letter-spacing="-1">12</text>
+          <text x="10" y="51" fill="${dimCol}" font-family="monospace" font-size="4">MB/S</text>
+
+          <!-- Download col -->
+          <text x="110" y="27" fill="${accentColor}" font-family="monospace" font-size="5" font-weight="bold" text-anchor="end">DOWN ↓</text>
+          <text x="110" y="44" fill="${accentColor}" font-family="monospace" font-size="16" font-weight="900" letter-spacing="-1" text-anchor="end">84</text>
+          <text x="110" y="51" fill="${dimCol}" font-family="monospace" font-size="4" text-anchor="end">MB/S</text>
+
+          <!-- Shared Throughput Bar -->
+          <g transform="translate(10, 56)">
+            ${Array.from({ length: 22 }, (_, i) => `<circle cx="${i * 4.6 + 1.5}" cy="2" r="1.3" fill="${i < 9 ? accentColor : dotOff}"/>`).join('')}
+          </g>
+
+          <line x1="8" y1="63" x2="112" y2="63" stroke="${lineCol}" stroke-width="1"/>
+          <text x="10" y="73" fill="${dimCol}" font-family="monospace" font-size="4.5">PEAK 48 / 212</text>
+          <circle cx="86" cy="71.5" r="1.5" fill="${accentColor}"/>
+          <text x="91" y="73" fill="${accentColor}" font-family="monospace" font-size="4.5" font-weight="bold">ONLINE</text>
+        </svg>
+      `;
+
     case 'minimal':
     default:
       return `

@@ -48,6 +48,11 @@ export async function invokeCommand(cmd, args = {}) {
         gpu_temp: Math.floor(48 + Math.random() * 10),
         ram: 62,
         battery: 100,
+        net_up: 12,
+        net_dn: 84,
+        peak_up: 48,
+        peak_dn: 212,
+        iface: 'ETH0',
       };
     }
     if (cmd === 'send_config') {

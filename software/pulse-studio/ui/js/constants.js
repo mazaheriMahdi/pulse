@@ -9,6 +9,7 @@ export const AVAILABLE_FACES = [
   { id: 'ram',     faceId: 3, name: 'MEMORY',      short: 'RAM'    },
   { id: 'thermal', faceId: 4, name: 'THERMAL',     short: 'TEMP'   },
   { id: 'minimal', faceId: 5, name: 'MINIMAL',     short: 'ONE'    },
+  { id: 'network', faceId: 6, name: 'NETWORK',     short: 'NET'    },
 ];
 
 export const ACCENT_PALETTE = [
@@ -40,4 +41,9 @@ export const INITIAL_TELEMETRY = {
   ram: 56,
   ramT: 42,
   battery: 100,
+  netUp: 12,
+  netDn: 84,
+  peakUp: 48,
+  peakDn: 212,
+  iface: 'ETH0',
 };

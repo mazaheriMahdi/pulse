@@ -43,6 +43,9 @@ function initFaceLibrary() {
   if (!faceGridEl) return;
   faceGridEl.innerHTML = '';
 
+  const faceCount = document.getElementById('faceCount');
+  if (faceCount) faceCount.textContent = `${AVAILABLE_FACES.length} FACES`;
+
   AVAILABLE_FACES.forEach((face) => {
     const card = document.createElement('div');
     const isActive = face.id === store.settings.face;
@@ -338,6 +341,11 @@ function startTelemetryLoop() {
           gpuT: data.gpu_temp,
           ram: data.ram,
           battery: data.battery,
+          netUp: data.net_up,
+          netDn: data.net_dn,
+          peakUp: data.peak_up,
+          peakDn: data.peak_dn,
+          iface: data.iface,
         });
       }
     } catch (e) {
