@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
@@ -24,6 +25,25 @@ pub struct TelemetryData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BootStatus {
+    pub step: u8,
+    pub label: String,
+    pub detail: String,
+    pub is_connected: bool,
+}
+
+impl Default for BootStatus {
+    fn default() -> Self {
+        Self {
+            step: 1,
+            label: "SCANNING HARDWARE BUS".to_string(),
+            detail: "Searching for PULSE gadget on serial ports...".to_string(),
+            is_connected: false,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StudioConfig {
     pub face: String,
     pub accent: String,
@@ -38,6 +58,7 @@ pub struct StudioConfig {
 struct AppState {
     latest_telemetry: Arc<Mutex<Option<TelemetryData>>>,
     is_connected: Arc<Mutex<bool>>,
+    boot_status: Arc<Mutex<BootStatus>>,
 }
 
 fn get_config_dir() -> PathBuf {
@@ -48,7 +69,77 @@ fn get_config_dir() -> PathBuf {
     }
 }
 
+/// Locates the `gadget-host` binary
+fn find_host_binary() -> Option<PathBuf> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let candidate = dir.join("gadget-host");
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+
+    let search_paths = [
+        "/home/mahdi/Programming/perfomance-monitor/software/gadget-host/target/debug/gadget-host",
+        "/home/mahdi/Programming/perfomance-monitor/software/gadget-host/target/release/gadget-host",
+        "/home/mahdi/Programming/perfomance-monitor/target/debug/gadget-host",
+    ];
+
+    for p in &search_paths {
+        let path = PathBuf::from(p);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    None
+}
+
+/// Ensures the `gadget-host` daemon process is running in the background
+fn ensure_host_daemon() -> bool {
+    // If socket exists and is connectable, it's already running
+    if UnixStream::connect(IPC_SOCKET_PATH).is_ok() {
+        return true;
+    }
+
+    // Try to spawn the binary
+    if let Some(bin) = find_host_binary() {
+        eprintln!("[Host Manager] Spawning gadget-host: {:?}", bin);
+        let _ = Command::new(bin)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn();
+    } else {
+        eprintln!("[Host Manager] Binary not found directly, falling back to cargo run...");
+        let _ = Command::new("cargo")
+            .args(["run", "--manifest-path", "/home/mahdi/Programming/perfomance-monitor/software/gadget-host/Cargo.toml", "--", "--baud", "115200"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn();
+    }
+
+    // Wait up to 2.5s for the socket to appear
+    for _ in 0..25 {
+        sleep(Duration::from_millis(100));
+        if UnixStream::connect(IPC_SOCKET_PATH).is_ok() {
+            eprintln!("[Host Manager] Host daemon is now responding on socket!");
+            return true;
+        }
+    }
+
+    false
+}
+
 // ── TAURI COMMANDS ────────────────────────────────────────────────────────────
+
+#[tauri::command]
+fn get_boot_status(state: tauri::State<'_, AppState>) -> Result<BootStatus, String> {
+    let bs = state.boot_status.lock().map_err(|e| e.to_string())?;
+    Ok(bs.clone())
+}
 
 #[tauri::command]
 fn get_telemetry(state: tauri::State<'_, AppState>) -> Result<Option<TelemetryData>, String> {
@@ -62,8 +153,12 @@ fn is_daemon_connected(state: tauri::State<'_, AppState>) -> bool {
 }
 
 #[tauri::command]
+fn spawn_host_daemon() -> bool {
+    ensure_host_daemon()
+}
+
+#[tauri::command]
 fn send_config(config: StudioConfig) -> Result<String, String> {
-    // Map face string to face_id
     let face_id: u8 = match config.face.as_str() {
         "cpu" => 0,
         "gpu" => 1,
@@ -76,7 +171,6 @@ fn send_config(config: StudioConfig) -> Result<String, String> {
         _ => 2,
     };
 
-    // Map accent color hex to accent_color_id
     let accent_color_id: u8 = match config.accent.to_lowercase().as_str() {
         "#d71921" => 1, // Red
         "#ff5a00" => 2, // Orange
@@ -175,57 +269,117 @@ fn close_window(window: Window) {
 fn main() {
     let latest_telemetry = Arc::new(Mutex::new(None));
     let is_connected = Arc::new(Mutex::new(false));
+    let boot_status = Arc::new(Mutex::new(BootStatus::default()));
 
     let tele_clone = Arc::clone(&latest_telemetry);
     let conn_clone = Arc::clone(&is_connected);
+    let boot_clone = Arc::clone(&boot_status);
 
-    // Background thread continuously reading telemetry stream from gadget-host daemon
-    std::thread::spawn(move || loop {
-        match UnixStream::connect(IPC_SOCKET_PATH) {
-            Ok(stream) => {
-                if let Ok(mut c) = conn_clone.lock() {
-                    *c = true;
+    // Host supervisor thread
+    std::thread::spawn(move || {
+        // Step 1: Scan hardware serial ports
+        {
+            let mut b = boot_clone.lock().unwrap();
+            b.step = 1;
+            b.label = "SCANNING HARDWARE BUS".to_string();
+            let mut detected = "No ports found".to_string();
+            for port in &["/dev/ttyUSB1", "/dev/ttyUSB0", "/dev/ttyACM0"] {
+                if Path::new(port).exists() {
+                    detected = format!("Found PULSE gadget on {}", port);
+                    break;
                 }
-                let mut reader = BufReader::new(stream);
-                loop {
-                    let mut line = String::new();
-                    match reader.read_line(&mut line) {
-                        Ok(0) => break, // EOF / daemon restarted
-                        Ok(_) => {
-                            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
-                                if val.get("type").and_then(|t| t.as_str()) == Some("telemetry") {
-                                    if let (Some(cpu), Some(cpu_t), Some(ram), Some(gpu), Some(gpu_t), Some(bat)) = (
-                                        val.get("cpu").and_then(|v| v.as_u64()),
-                                        val.get("cpu_temp").and_then(|v| v.as_u64()),
-                                        val.get("ram").and_then(|v| v.as_u64()),
-                                        val.get("gpu").and_then(|v| v.as_u64()),
-                                        val.get("gpu_temp").and_then(|v| v.as_u64()),
-                                        val.get("battery").and_then(|v| v.as_u64()),
-                                    ) {
-                                        let data = TelemetryData {
-                                            cpu: cpu as u8,
-                                            cpu_temp: cpu_t as u8,
-                                            ram: ram as u8,
-                                            gpu: gpu as u8,
-                                            gpu_temp: gpu_t as u8,
-                                            battery: bat as u8,
-                                        };
-                                        if let Ok(mut t) = tele_clone.lock() {
-                                            *t = Some(data);
+            }
+            b.detail = detected;
+        }
+        sleep(Duration::from_millis(450));
+
+        // Step 2: Ensure host daemon is running
+        {
+            let mut b = boot_clone.lock().unwrap();
+            b.step = 2;
+            b.label = "DAEMON INITIALIZATION".to_string();
+            b.detail = "Launching background telemetry engine...".to_string();
+        }
+
+        ensure_host_daemon();
+        sleep(Duration::from_millis(350));
+
+        // Step 3: Connect to daemon IPC stream
+        {
+            let mut b = boot_clone.lock().unwrap();
+            b.step = 3;
+            b.label = "SYNCING 115200 BAUD LINK".to_string();
+            b.detail = "Establishing high-speed serial handshake...".to_string();
+        }
+
+        loop {
+            match UnixStream::connect(IPC_SOCKET_PATH) {
+                Ok(stream) => {
+                    if let Ok(mut c) = conn_clone.lock() {
+                        *c = true;
+                    }
+
+                    {
+                        let mut b = boot_clone.lock().unwrap();
+                        b.step = 4;
+                        b.label = "TELEMETRY SENSORS ONLINE".to_string();
+                        b.detail = "Synchronizing CPU, GPU, RAM, & Thermal metrics...".to_string();
+                    }
+
+                    let mut reader = BufReader::new(stream);
+                    let mut first_packet = true;
+
+                    loop {
+                        let mut line = String::new();
+                        match reader.read_line(&mut line) {
+                            Ok(0) => break, // EOF / daemon restarted
+                            Ok(_) => {
+                                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
+                                    if val.get("type").and_then(|t| t.as_str()) == Some("telemetry") {
+                                        if let (Some(cpu), Some(cpu_t), Some(ram), Some(gpu), Some(gpu_t), Some(bat)) = (
+                                            val.get("cpu").and_then(|v| v.as_u64()),
+                                            val.get("cpu_temp").and_then(|v| v.as_u64()),
+                                            val.get("ram").and_then(|v| v.as_u64()),
+                                            val.get("gpu").and_then(|v| v.as_u64()),
+                                            val.get("gpu_temp").and_then(|v| v.as_u64()),
+                                            val.get("battery").and_then(|v| v.as_u64()),
+                                        ) {
+                                            let data = TelemetryData {
+                                                cpu: cpu as u8,
+                                                cpu_temp: cpu_t as u8,
+                                                ram: ram as u8,
+                                                gpu: gpu as u8,
+                                                gpu_temp: gpu_t as u8,
+                                                battery: bat as u8,
+                                            };
+                                            if let Ok(mut t) = tele_clone.lock() {
+                                                *t = Some(data);
+                                            }
+
+                                            if first_packet {
+                                                first_packet = false;
+                                                let mut b = boot_clone.lock().unwrap();
+                                                b.step = 5;
+                                                b.label = "CONNECTED".to_string();
+                                                b.detail = "PULSE hardware locked & synced ✓".to_string();
+                                                b.is_connected = true;
+                                            }
                                         }
                                     }
                                 }
                             }
+                            Err(_) => break,
                         }
-                        Err(_) => break,
                     }
                 }
-            }
-            Err(_) => {
-                if let Ok(mut c) = conn_clone.lock() {
-                    *c = false;
+                Err(_) => {
+                    if let Ok(mut c) = conn_clone.lock() {
+                        *c = false;
+                    }
+                    sleep(Duration::from_millis(500));
+                    // Try to re-ensure host daemon if it crashed
+                    ensure_host_daemon();
                 }
-                sleep(Duration::from_millis(500));
             }
         }
     });
@@ -234,10 +388,13 @@ fn main() {
         .manage(AppState {
             latest_telemetry,
             is_connected,
+            boot_status,
         })
         .invoke_handler(tauri::generate_handler![
+            get_boot_status,
             get_telemetry,
             is_daemon_connected,
+            spawn_host_daemon,
             send_config,
             save_preset,
             load_preset,

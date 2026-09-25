@@ -1,0 +1,294 @@
+/* ============================================================
+   PULSE STUDIO — Nothing (R) OS Boot Splash Screen
+   Design: Nothing OS × Teenage Engineering Hardware Diagnostics
+   ============================================================ */
+
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: #000000;
+  background-image: radial-gradient(#151515 1px, transparent 1px);
+  background-size: 24px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.splash-overlay.dismissed {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+/* ── BOOT CARD CHASSIS ───────────────────────────────────────── */
+.boot-card {
+  width: min(540px, 90vw);
+  background: #090909;
+  border: 1px solid #1c1c1c;
+  border-radius: 4px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 32px 100px rgba(0, 0, 0, 0.98);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle corner registration marks (Teenage Engineering style) */
+.boot-card::before,
+.boot-card::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: #333333;
+  border-style: solid;
+  pointer-events: none;
+}
+.boot-card::before {
+  top: 6px;
+  left: 6px;
+  border-width: 1px 0 0 1px;
+}
+.boot-card::after {
+  bottom: 6px;
+  right: 6px;
+  border-width: 0 1px 1px 0;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────── */
+.boot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1a1a1a;
+  padding-bottom: 16px;
+}
+
+.boot-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.boot-blip {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--red, #d71921);
+  box-shadow: 0 0 14px rgba(215, 25, 33, 0.85);
+  animation: redBreathe 1.8s ease-in-out infinite;
+}
+
+@keyframes redBreathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(215, 25, 33, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 18px rgba(215, 25, 33, 0.95);
+  }
+}
+
+.boot-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.boot-title .sub {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--dim, #5a5a5a);
+}
+
+.boot-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: #121212;
+  border: 1px solid #242424;
+  color: var(--text, #f2f2f2);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.boot-badge .pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--orange, #ff5a00);
+  animation: pulse 1.2s infinite;
+}
+
+.boot-badge.connected {
+  border-color: #2ee6c5;
+  color: #2ee6c5;
+}
+
+.boot-badge.connected .pulse-dot {
+  background: #2ee6c5;
+  box-shadow: 0 0 8px #2ee6c5;
+}
+
+/* ── DIAGNOSTIC LOG CONSOLE ──────────────────────────────────── */
+.boot-console {
+  background: #050505;
+  border: 1px solid #161616;
+  border-radius: 2px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.console-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #404040;
+  transition: color 0.2s;
+}
+
+.console-step.active {
+  color: #a0a0a0;
+}
+
+.console-step.done {
+  color: #ffffff;
+}
+
+.console-step .step-prefix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-step .step-index {
+  color: #555555;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.console-step .step-name {
+  letter-spacing: 0.12em;
+}
+
+.console-step .step-status {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #404040;
+}
+
+.console-step.active .step-status {
+  color: var(--orange, #ff5a00);
+}
+
+.console-step.done .step-status {
+  color: #2ee6c5;
+}
+
+/* ── CIRCULAR DOT BAR PROGRESS ───────────────────────────────── */
+.boot-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.boot-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  color: var(--dim, #5a5a5a);
+}
+
+.boot-progress-label .pct {
+  font-family: monospace;
+  color: var(--text, #f2f2f2);
+}
+
+.boot-dotbar {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.boot-dotbar i {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: #181818;
+  display: block;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.boot-dotbar i.on {
+  background: #ffffff;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.4);
+}
+
+.boot-dotbar i.on.red {
+  background: var(--red, #d71921);
+  box-shadow: 0 0 7px rgba(215, 25, 33, 0.7);
+}
+
+/* ── FOOTER STATUS / ACTION ──────────────────────────────────── */
+.boot-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--dim, #5a5a5a);
+  border-top: 1px solid #1a1a1a;
+  padding-top: 14px;
+}
+
+.boot-detail-msg {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.boot-action-skip {
+  background: transparent;
+  border: 1px solid #252525;
+  border-radius: 2px;
+  color: var(--dim, #5a5a5a);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.boot-action-skip:hover {
+  border-color: #555555;
+  color: #f2f2f2;
+}

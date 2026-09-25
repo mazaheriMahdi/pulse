@@ -80,7 +80,7 @@ export function renderNdot(text, cellSize, className = '') {
         if (isLit) {
           dots += `<circle cx="${cx}" cy="${cy}" r="0.43" fill="currentColor"/>`;
         } else {
-          dots += `<circle cx="${cx}" cy="${cy}" r="0.32" fill="var(--dot-off, #1c1c1c)"/>`;
+          dots += `<circle cx="${cx}" cy="${cy}" r="0.32" fill="#181818"/>`;
         }
       }
     }

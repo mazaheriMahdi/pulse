@@ -6,6 +6,7 @@ import { AVAILABLE_FACES, ACCENT_PALETTE, DEFAULT_SETTINGS } from './constants.j
 import { store } from './state.js';
 import { renderFace } from './faces.js';
 import { renderThumbnail } from './thumbnails.js';
+import { BootSplashController } from './splash.js';
 import {
   fetchTelemetry,
   checkDaemonConnected,
@@ -352,6 +353,14 @@ function startTelemetryLoop() {
  * Main Application Bootstrap
  */
 function bootstrap() {
+  const splashEl = document.getElementById('splashOverlay');
+  if (splashEl) {
+    const splash = new BootSplashController(splashEl);
+    splash.init().then(() => {
+      console.log('[Boot] Nothing OS splash sequence completed, Studio active.');
+    });
+  }
+
   initFaceLibrary();
   initControls();
   initResponsiveScaler();

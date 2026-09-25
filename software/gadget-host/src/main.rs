@@ -349,42 +349,42 @@ pub fn should_fallback_port(port_name: &str, is_not_found: bool) -> bool {
 }
 
 fn open_serial_port(port_name: &str, baud: u32) -> Option<Box<dyn serialport::SerialPort>> {
-    println!("Connecting to serial port {}...", port_name);
-    match serialport::new(port_name, baud)
-        .timeout(Duration::from_millis(100))
-        .open()
-    {
-        Ok(p) => {
-            println!("Connected to gadget successfully!");
-            sleep(Duration::from_millis(1500));
-            Some(p)
-        }
-        Err(e) => {
-            let is_not_found = matches!(e.kind, serialport::ErrorKind::Io(std::io::ErrorKind::NotFound))
-                || e.to_string().to_lowercase().contains("no such file")
-                || e.to_string().to_lowercase().contains("not found");
-
-            if should_fallback_port(port_name, is_not_found) {
-                println!("Port /dev/ttyUSB0 not found, trying fallback /dev/ttyACM0...");
-                match serialport::new("/dev/ttyACM0", baud)
-                    .timeout(Duration::from_millis(100))
-                    .open()
-                {
-                    Ok(p) => {
-                        println!("Connected to gadget successfully on /dev/ttyACM0!");
-                        sleep(Duration::from_millis(1500));
-                        return Some(p);
-                    }
-                    Err(fallback_err) => {
-                        eprintln!("Warning: Fallback /dev/ttyACM0 also failed: {}", fallback_err);
-                    }
-                }
-            }
-            eprintln!("Warning: Could not open {}: {}", port_name, e);
-            eprintln!("Running in dry-run monitor mode.");
-            None
+    let mut candidates = vec![port_name.to_string()];
+    for fallback in &["/dev/ttyUSB1", "/dev/ttyUSB0", "/dev/ttyACM0", "/dev/ttyACM1"] {
+        if !candidates.iter().any(|c| c == *fallback) {
+            candidates.push(fallback.to_string());
         }
     }
+
+    if let Ok(available) = serialport::available_ports() {
+        for p in available {
+            if !candidates.contains(&p.port_name) {
+                candidates.push(p.port_name);
+            }
+        }
+    }
+
+    for candidate in &candidates {
+        if Path::new(candidate).exists() {
+            println!("Probing serial port {}...", candidate);
+            match serialport::new(candidate, baud)
+                .timeout(Duration::from_millis(100))
+                .open()
+            {
+                Ok(p) => {
+                    println!("Connected to gadget successfully on {}!", candidate);
+                    sleep(Duration::from_millis(1500));
+                    return Some(p);
+                }
+                Err(e) => {
+                    eprintln!("Port {} failed: {}", candidate, e);
+                }
+            }
+        }
+    }
+
+    eprintln!("Warning: No active gadget found on any serial port. Running in dry-run monitor mode.");
+    None
 }
 
 fn start_ipc_server(config_tx: Sender<ConfigurationPacket>) -> Arc<Mutex<Vec<UnixStream>>> {

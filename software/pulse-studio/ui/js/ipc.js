@@ -29,6 +29,14 @@ export async function invokeCommand(cmd, args = {}) {
     }
   } else {
     // Development browser mock fallback
+    if (cmd === 'get_boot_status') {
+      return window.__MOCK_BOOT_STATUS__ || {
+        step: 5,
+        label: 'CONNECTED',
+        detail: 'PULSE hardware locked & synced ✓',
+        is_connected: true,
+      };
+    }
     if (cmd === 'is_daemon_connected') {
       return true;
     }
@@ -56,6 +64,10 @@ export async function invokeCommand(cmd, args = {}) {
     }
     return null;
   }
+}
+
+export async function fetchBootStatus() {
+  return await invokeCommand('get_boot_status');
 }
 
 export async function fetchTelemetry() {

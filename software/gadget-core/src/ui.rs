@@ -77,30 +77,20 @@ impl Dashboard {
 
         if self.config.invert() {
             let fg = if self.config.accent_color_id == 0 { Color::BLACK } else { accent };
-            let dot_off = Color::new(
-                238 - (accent.r as u16 * 14 / 255) as u8,
-                238 - (accent.g as u16 * 14 / 255) as u8,
-                238 - (accent.b as u16 * 14 / 255) as u8,
-            );
             (
                 Color::WHITE,                  // bg
                 fg,                            // fg / accent
                 Color::new(140, 140, 140),     // dim
                 Color::new(225, 225, 225),     // line
-                dot_off,                       // dot off
+                Color::new(220, 220, 220),     // dot off
             )
         } else {
-            let dot_off = Color::new(
-                20 + (accent.r as u16 * 14 / 255) as u8,
-                20 + (accent.g as u16 * 14 / 255) as u8,
-                20 + (accent.b as u16 * 14 / 255) as u8,
-            );
             (
                 Color::BLACK,                  // bg
                 accent,                        // fg / accent
                 Color::new(107, 107, 107),     // dim
                 Color::new(38, 38, 38),        // line
-                dot_off,                       // dot off
+                Color::new(28, 28, 28),        // dot off
             )
         }
     }
@@ -498,10 +488,9 @@ impl Dashboard {
         let gpu_col = if gpu_hot { red } else { fg };
 
         if cpu_t != self.prev_temp1 {
-            let (_, _, _, _, dot_off) = self.get_palette();
             self.draw_big_val(display, CPU_IX, cpu_t, cpu_col, bg);
-            draw_ndot_char(display, CPU_IX + 120, VAL_Y + 4, b'*', 7, cpu_col, bg, dot_off);
-            draw_ndot_char(display, CPU_IX + 158, VAL_Y + 4, b'C', 7, cpu_col, bg, dot_off);
+            draw_ndot_char(display, CPU_IX + 120, VAL_Y + 4, b'*', 7, cpu_col, bg);
+            draw_ndot_char(display, CPU_IX + 158, VAL_Y + 4, b'C', 7, cpu_col, bg);
 
             let status = if cpu_hot { b"HOT TEMP" as &[u8] } else { b"NORMAL" };
             draw_ndot_str(display, CPU_IX, BOT_VAL_Y, status, 3, if cpu_hot { red } else { dim }, bg);
@@ -509,10 +498,9 @@ impl Dashboard {
         }
 
         if gpu_t != self.prev_temp2 {
-            let (_, _, _, _, dot_off) = self.get_palette();
             self.draw_big_val(display, GPU_IX, gpu_t, gpu_col, bg);
-            draw_ndot_char(display, GPU_IX + 120, VAL_Y + 4, b'*', 7, gpu_col, bg, dot_off);
-            draw_ndot_char(display, GPU_IX + 158, VAL_Y + 4, b'C', 7, gpu_col, bg, dot_off);
+            draw_ndot_char(display, GPU_IX + 120, VAL_Y + 4, b'*', 7, gpu_col, bg);
+            draw_ndot_char(display, GPU_IX + 158, VAL_Y + 4, b'C', 7, gpu_col, bg);
 
             let status = if gpu_hot { b"HOT TEMP" as &[u8] } else { b"NORMAL" };
             draw_ndot_str(display, GPU_IX, BOT_VAL_Y, status, 3, if gpu_hot { red } else { dim }, bg);
@@ -582,74 +570,61 @@ impl Dashboard {
     /// Draws a high-contrast 77px tall numeral using cell = 11 with 9px smooth circular dots.
     fn draw_big_val<D: Display>(&self, display: &mut D, ix: u16, val: u8, fg: Color, bg: Color) {
         let val = val.min(100);
-        let (_, _, dim, _, dot_off) = self.get_palette();
-        let pct_y = VAL_Y + 42;
+        let (_, _, dim, _, _) = self.get_palette();
+        let pct_y = VAL_Y + 56;
 
         if val >= 100 {
-            draw_ndot_char(display, ix, VAL_Y, b'1', 11, fg, bg, dot_off);
+            draw_ndot_char(display, ix, VAL_Y, b'1', 11, fg, bg);
             display.fill_rect(ix + 55, VAL_Y, 6, 77, bg);
-            draw_ndot_char(display, ix + 61, VAL_Y, b'0', 11, fg, bg, dot_off);
+            draw_ndot_char(display, ix + 61, VAL_Y, b'0', 11, fg, bg);
             display.fill_rect(ix + 116, VAL_Y, 6, 77, bg);
-            draw_ndot_char(display, ix + 122, VAL_Y, b'0', 11, fg, bg, dot_off);
+            draw_ndot_char(display, ix + 122, VAL_Y, b'0', 11, fg, bg);
 
             let tail_x = ix + 122 + 55;
-            if self.config.show_units() {
-                draw_ndot_char(display, tail_x + 4, pct_y, b'%', 5, dim, bg, dot_off);
-                let clear_x = tail_x + 4 + 25;
-                if clear_x < ix + CPU_IW {
-                    display.fill_rect(clear_x, VAL_Y, (ix + CPU_IW) - clear_x, 77, bg);
-                }
-            } else if tail_x < ix + CPU_IW {
+            if tail_x < ix + CPU_IW {
                 display.fill_rect(tail_x, VAL_Y, (ix + CPU_IW) - tail_x, 77, bg);
+            }
+            if self.config.show_units() {
+                draw_ascii(display, tail_x + 6, pct_y, b"%", dim, bg, 3);
             }
         } else if val < 10 {
             let d = val + b'0';
-            draw_ndot_char(display, ix, VAL_Y, d, 11, fg, bg, dot_off);
-            let tail_x = ix + 55;
+            draw_ndot_char(display, ix, VAL_Y, d, 11, fg, bg);
+            display.fill_rect(ix + 55, VAL_Y, CPU_IW - 55, 77, bg);
             if self.config.show_units() {
-                draw_ndot_char(display, tail_x + 6, pct_y, b'%', 5, dim, bg, dot_off);
-                let clear_x = tail_x + 6 + 25;
-                if clear_x < ix + CPU_IW {
-                    display.fill_rect(clear_x, VAL_Y, (ix + CPU_IW) - clear_x, 77, bg);
-                }
-            } else if tail_x < ix + CPU_IW {
-                display.fill_rect(tail_x, VAL_Y, (ix + CPU_IW) - tail_x, 77, bg);
+                draw_ascii(display, ix + 61, pct_y, b"%", dim, bg, 3);
             }
         } else {
             let d0 = (val / 10) + b'0';
             let d1 = (val % 10) + b'0';
-            draw_ndot_char(display, ix, VAL_Y, d0, 11, fg, bg, dot_off);
+            draw_ndot_char(display, ix, VAL_Y, d0, 11, fg, bg);
             display.fill_rect(ix + 55, VAL_Y, 11, 77, bg);
-            draw_ndot_char(display, ix + 66, VAL_Y, d1, 11, fg, bg, dot_off);
+            draw_ndot_char(display, ix + 66, VAL_Y, d1, 11, fg, bg);
 
             let tail_x = ix + 121;
-            if self.config.show_units() {
-                draw_ndot_char(display, tail_x + 6, pct_y, b'%', 5, dim, bg, dot_off);
-                let clear_x = tail_x + 6 + 25;
-                if clear_x < ix + CPU_IW {
-                    display.fill_rect(clear_x, VAL_Y, (ix + CPU_IW) - clear_x, 77, bg);
-                }
-            } else if tail_x < ix + CPU_IW {
+            if tail_x < ix + CPU_IW {
                 display.fill_rect(tail_x, VAL_Y, (ix + CPU_IW) - tail_x, 77, bg);
+            }
+            if self.config.show_units() {
+                draw_ascii(display, tail_x + 6, pct_y, b"%", dim, bg, 3);
             }
         }
     }
 
     /// Draws a 49px tall temperature numeral using cell = 7 with 5px smooth circular dots.
     fn draw_temp_val<D: Display>(&self, display: &mut D, ix: u16, temp: u8, fg: Color, bg: Color) {
-        let (_, _, _, _, dot_off) = self.get_palette();
         let t = temp.min(99);
         let tens = (t / 10) + b'0';
         let ones = (t % 10) + b'0';
 
         let mut x = ix;
-        draw_ndot_char(display, x, BOT_VAL_Y, tens, 7, fg, bg, dot_off);
+        draw_ndot_char(display, x, BOT_VAL_Y, tens, 7, fg, bg);
         x += 35 + 7;
-        draw_ndot_char(display, x, BOT_VAL_Y, ones, 7, fg, bg, dot_off);
+        draw_ndot_char(display, x, BOT_VAL_Y, ones, 7, fg, bg);
         x += 35 + 7;
-        draw_ndot_char(display, x, BOT_VAL_Y, b'*', 7, fg, bg, dot_off); // degree symbol
+        draw_ndot_char(display, x, BOT_VAL_Y, b'*', 7, fg, bg); // degree symbol
         x += 35 + 7;
-        draw_ndot_char(display, x, BOT_VAL_Y, b'C', 7, fg, bg, dot_off);
+        draw_ndot_char(display, x, BOT_VAL_Y, b'C', 7, fg, bg);
     }
 
     /// Draws a compact gigabyte string like "20.5G" in 2px NDot font.
@@ -665,19 +640,19 @@ impl Dashboard {
     ) {
         let mut cx = x;
         if gb_int >= 10 {
-            draw_ndot_char(display, cx, y, (gb_int / 10) + b'0', 2, fg, bg, bg);
+            draw_ndot_char(display, cx, y, (gb_int / 10) + b'0', 2, fg, bg);
             cx += 12;
         }
-        draw_ndot_char(display, cx, y, (gb_int % 10) + b'0', 2, fg, bg, bg);
+        draw_ndot_char(display, cx, y, (gb_int % 10) + b'0', 2, fg, bg);
         cx += 12;
 
         if gb_dec > 0 {
             display.fill_rect(cx, y + 10, 2, 2, fg);
             cx += 4;
-            draw_ndot_char(display, cx, y, gb_dec + b'0', 2, fg, bg, bg);
+            draw_ndot_char(display, cx, y, gb_dec + b'0', 2, fg, bg);
             cx += 12;
         }
 
-        draw_ndot_char(display, cx, y, b'G', 2, fg, bg, bg);
+        draw_ndot_char(display, cx, y, b'G', 2, fg, bg);
     }
 }
