@@ -22,6 +22,7 @@ An ultra-refined desktop telemetry monitor and control studio built in **100% Ru
 | **THERMAL** | Multi-zone temperature matrix | CPU & GPU heat sensors with dynamic hot indicators |
 | **MINIMAL** | High-contrast ultra-minimalist single metric | Focused typography with compact status pill |
 | **NETWORK** | Real-time upstream / downstream throughput | Dual channel MB/s meters, peak indicators, interface badge |
+| **CLOCK** | 24h dot-matrix time with 60-dot circular seconds bar | 5×7 giant numerals, blinking red colon, AM/PM, TE ruler |
 
 ---
 
