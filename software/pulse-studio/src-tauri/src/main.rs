@@ -90,9 +90,19 @@ fn find_host_binary() -> Option<PathBuf> {
         }
     }
 
+    if let Ok(home) = std::env::var("HOME") {
+        let user_bin = PathBuf::from(home).join(".local/bin/gadget-host");
+        if user_bin.exists() {
+            return Some(user_bin);
+        }
+    }
+
     let search_paths = [
-        "/home/mahdi/Programming/perfomance-monitor/software/gadget-host/target/debug/gadget-host",
+        "/usr/local/bin/gadget-host",
+        "/usr/bin/gadget-host",
         "/home/mahdi/Programming/perfomance-monitor/software/gadget-host/target/release/gadget-host",
+        "/home/mahdi/Programming/perfomance-monitor/software/gadget-host/target/debug/gadget-host",
+        "/home/mahdi/Programming/perfomance-monitor/target/release/gadget-host",
         "/home/mahdi/Programming/perfomance-monitor/target/debug/gadget-host",
     ];
 
@@ -100,6 +110,17 @@ fn find_host_binary() -> Option<PathBuf> {
         let path = PathBuf::from(p);
         if path.exists() {
             return Some(path);
+        }
+    }
+
+    // Try `which gadget-host`
+    if let Ok(output) = Command::new("which").arg("gadget-host").output() {
+        if output.status.success() {
+            let p_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let p = PathBuf::from(p_str);
+            if p.exists() {
+                return Some(p);
+            }
         }
     }
 
