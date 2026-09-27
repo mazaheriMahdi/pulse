@@ -37,6 +37,19 @@ const flashFill = document.getElementById('flashFill');
 const flashLabel = document.getElementById('flashLabel');
 const sbStatus = document.getElementById('sbStatus');
 
+function syncSettingsToGadget() {
+  flashConfigToGadget({
+    face: store.settings.face,
+    accent: store.settings.accent,
+    refresh: store.settings.refresh,
+    brightness: store.settings.brightness,
+    label: store.settings.label,
+    temp: store.settings.temp,
+    units: store.settings.units,
+    invert: store.settings.invert,
+  }).catch(() => {});
+}
+
 /**
  * Initializes the Face Library sidebar cards
  */
@@ -64,6 +77,7 @@ function initFaceLibrary() {
     card.addEventListener('click', () => {
       store.updateSettings({ face: face.id });
       updateFaceHeaderNames();
+      syncSettingsToGadget();
     });
 
     faceGridEl.appendChild(card);
@@ -166,6 +180,7 @@ function initControls() {
       sw.classList.add('on');
       store.updateSettings({ accent: color });
       updateThumbnailsAccent();
+      syncSettingsToGadget();
     });
   });
 
@@ -177,6 +192,7 @@ function initControls() {
       const hz = parseInt(btn.dataset.v, 10);
       store.updateSettings({ refresh: hz });
       if (streamRate) streamRate.textContent = `STREAMING · ${hz} HZ`;
+      syncSettingsToGadget();
     });
   });
 
@@ -188,6 +204,9 @@ function initControls() {
       if (screenEl) screenEl.style.filter = `brightness(${0.45 + val / 160})`;
       store.updateSettings({ brightness: val });
     });
+    brightnessSlider.addEventListener('change', () => {
+      syncSettingsToGadget();
+    });
   }
 
   // Toggles / Flags (Nothing style switches)
@@ -197,6 +216,7 @@ function initControls() {
       const newVal = !store.settings[k];
       store.updateSettings({ [k]: newVal });
       t.classList.toggle('on', newVal);
+      syncSettingsToGadget();
     });
   });
 

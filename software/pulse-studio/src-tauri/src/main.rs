@@ -134,10 +134,14 @@ fn ensure_host_daemon() -> bool {
         return true;
     }
 
+    // Clean up stale socket file if any
+    let _ = std::fs::remove_file(IPC_SOCKET_PATH);
+
     // Try to spawn the binary
     if let Some(bin) = find_host_binary() {
         eprintln!("[Host Manager] Spawning gadget-host: {:?}", bin);
         let _ = Command::new(bin)
+            .args(["--baud", "115200"])
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -152,8 +156,8 @@ fn ensure_host_daemon() -> bool {
             .spawn();
     }
 
-    // Wait up to 2.5s for the socket to appear
-    for _ in 0..25 {
+    // Wait up to 3.5s for the socket to appear
+    for _ in 0..35 {
         sleep(Duration::from_millis(100));
         if UnixStream::connect(IPC_SOCKET_PATH).is_ok() {
             eprintln!("[Host Manager] Host daemon is now responding on socket!");

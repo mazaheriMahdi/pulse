@@ -499,24 +499,22 @@ fn open_serial_port(port_name: &str, baud: u32) -> Option<Box<dyn serialport::Se
 
     for candidate in &candidates {
         if Path::new(candidate).exists() {
-            println!("Probing serial port {}...", candidate);
             match serialport::new(candidate, baud)
                 .timeout(Duration::from_millis(100))
                 .open()
             {
                 Ok(p) => {
-                    println!("Connected to gadget successfully on {}!", candidate);
-                    sleep(Duration::from_millis(1500));
+                    println!("\n[Serial] Connected to gadget on {}!", candidate);
+                    sleep(Duration::from_millis(250));
                     return Some(p);
                 }
-                Err(e) => {
-                    eprintln!("Port {} failed: {}", candidate, e);
+                Err(_e) => {
+                    // Silent retry in loop
                 }
             }
         }
     }
 
-    eprintln!("Warning: No active gadget found on any serial port. Running in dry-run monitor mode.");
     None
 }
 
@@ -543,7 +541,8 @@ fn start_ipc_server(config_tx: Sender<ConfigurationPacket>) -> Arc<Mutex<Vec<Uni
             // Accept incoming connections
             match listener.accept() {
                 Ok((stream, _)) => {
-                    let _ = stream.set_nonblocking(true);
+                    let _ = stream.set_read_timeout(Some(Duration::from_millis(10)));
+                    let _ = stream.set_write_timeout(Some(Duration::from_millis(50)));
                     if let Ok(mut c) = clients_clone.lock() {
                         c.push(stream);
                     }
@@ -589,7 +588,7 @@ fn start_ipc_server(config_tx: Sender<ConfigurationPacket>) -> Arc<Mutex<Vec<Uni
                                 }
                             }
                         }
-                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut => {}
                         Err(_) => {
                             to_remove.push(idx);
                         }
@@ -638,6 +637,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nStreaming live telemetry to desktop gadget (Ctrl+C to stop)...\n");
 
     loop {
+        // Auto-reconnect serial port if disconnected and not in dry-run mode
+        if port.is_none() && !args.dry_run {
+            port = open_serial_port(&args.port, args.baud);
+        }
+
         // Handle incoming configuration requests from Studio
         while let Ok(cfg) = config_rx.try_recv() {
             println!(
@@ -652,7 +656,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let mut buf = [0u8; PACKET_LEN];
                 cfg.encode(&mut buf);
                 if let Err(e) = p.write_all(&buf) {
-                    eprintln!("Failed to write configuration to serial: {}", e);
+                    eprintln!("Failed to write configuration to serial: {}, resetting port handle", e);
+                    port = None;
                 } else {
                     println!("[Serial] Injected ConfigurationPacket to gadget successfully!");
                 }
@@ -704,8 +709,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(mut c) = ipc_clients.lock() {
                 let mut to_remove = Vec::new();
                 for (idx, client) in c.iter_mut().enumerate() {
-                    if let Err(_) = client.write_all(payload.as_bytes()) {
-                        to_remove.push(idx);
+                    if let Err(e) = client.write_all(payload.as_bytes()) {
+                        if e.kind() != std::io::ErrorKind::WouldBlock && e.kind() != std::io::ErrorKind::TimedOut {
+                            to_remove.push(idx);
+                        }
                     }
                 }
                 for idx in to_remove.into_iter().rev() {
@@ -718,7 +725,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut buf = [0u8; PACKET_LEN];
             packet.encode(&mut buf);
             if let Err(e) = p.write_all(&buf) {
-                eprintln!("\nSerial write error: {}", e);
+                eprintln!("\nSerial write error: {}, resetting port handle for auto-reconnect", e);
+                port = None;
             }
         }
 
