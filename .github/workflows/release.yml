@@ -1,0 +1,104 @@
+name: Release & Versioning Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Package Release Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libudev-dev \
+            pkg-config \
+            zip
+
+      - name: Determine Tag Version
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "Building release for tag: $TAG"
+
+      - name: Build gadget-host (Release)
+        run: |
+          cd software/gadget-host
+          cargo build --release
+
+      - name: Build pulse-studio (Release)
+        run: |
+          cd software/pulse-studio/src-tauri
+          cargo build --release
+
+      - name: Package Pulse Studio Suite (Linux x86_64)
+        run: |
+          TAG="${{ steps.vars.outputs.TAG }}"
+          PKG_DIR="pulse-studio-linux-x86_64-${TAG}"
+          mkdir -p "${PKG_DIR}/bin"
+          mkdir -p "${PKG_DIR}/icons"
+          mkdir -p "${PKG_DIR}/scripts"
+
+          # Binaries
+          cp software/pulse-studio/src-tauri/target/release/pulse-studio "${PKG_DIR}/bin/"
+          cp software/gadget-host/target/release/gadget-host "${PKG_DIR}/bin/"
+
+          # Icons & scripts
+          cp -r software/pulse-studio/src-tauri/icons/* "${PKG_DIR}/icons/"
+          cp scripts/install.sh "${PKG_DIR}/scripts/"
+          cp scripts/uninstall.sh "${PKG_DIR}/scripts/"
+          cp README.md "${PKG_DIR}/"
+
+          # Archive
+          tar -czvf "pulse-studio-linux-x86_64.tar.gz" "${PKG_DIR}"
+          tar -czvf "gadget-host-linux-x86_64.tar.gz" -C software/gadget-host/target/release gadget-host
+
+      - name: Package 3D Enclosures & STLs
+        run: |
+          zip -r pulse-enclosure-stls.zip enclosure/*.stl enclosure/*.png enclosure/*.py README.md
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.TAG }}
+          name: "PULSE Studio & Hardware ${{ steps.vars.outputs.TAG }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            pulse-studio-linux-x86_64.tar.gz
+            gadget-host-linux-x86_64.tar.gz
+            pulse-enclosure-stls.zip

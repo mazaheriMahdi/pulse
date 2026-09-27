@@ -1,12 +1,52 @@
-# Desktop Performance Monitor (Rust + Arduino Uno + ILI9488)
+# PULSE — Desktop Hardware Monitor & Studio
 
-A high-performance hardware monitor desktop gadget built in 100% Rust that connects to your laptop via USB Serial and displays real-time CPU, GPU, RAM, Temperatures, and Battery on a 3.5" TFT display (480x320).
+[![CI Build & Test](https://github.com/mazaheriMahdi/pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/mazaheriMahdi/pulse/actions/workflows/ci.yml)
+[![GitHub Pages](https://github.com/mazaheriMahdi/pulse/actions/workflows/pages.yml/badge.svg)](https://mazaheriMahdi.github.io/pulse/)
+[![Release Pipeline](https://github.com/mazaheriMahdi/pulse/actions/workflows/release.yml/badge.svg)](https://github.com/mazaheriMahdi/pulse/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
+
+An ultra-refined desktop telemetry monitor and control studio built in **100% Rust** for microcontrollers (AVR / Arduino Uno + 3.5" IPS display) and Linux desktops, following the **Nothing (R) OS × Teenage Engineering** dot-matrix hardware design language.
+
+🌐 **Live Web Studio / Previewer**: [https://mazaheriMahdi.github.io/pulse/](https://mazaheriMahdi.github.io/pulse/)
+
+---
+
+## 📸 Face Library
+
+| Face | Description | Display Elements |
+|------|-------------|------------------|
+| **DUAL LOAD** | Dual CPU + GPU split load gauges | Giant 5×7 dot numerals, dual dot progress bars, thermal readouts |
+| **CPU GRID** | Pure CPU performance diagnostics | $10 \times 10$ LED matrix load visualizer, frequency and core metrics |
+| **GPU GRID** | Dedicated GPU compute & VRAM monitor | Real-time NVIDIA core load, memory saturation, temperature blip |
+| **MEMORY** | RAM & Swap utilization breakdown | Active / Cached breakdown, dot segmented level gauges |
+| **THERMAL** | Multi-zone temperature matrix | CPU & GPU heat sensors with dynamic hot indicators |
+| **MINIMAL** | High-contrast ultra-minimalist single metric | Focused typography with compact status pill |
+| **NETWORK** | Real-time upstream / downstream throughput | Dual channel MB/s meters, peak indicators, interface badge |
+
+---
+
+## ⚡ Quick Install (Linux)
+
+### Option 1: Automatic Installer
+Clone the repository and run the installer:
+```bash
+git clone https://github.com/mazaheriMahdi/pulse.git
+cd pulse
+./scripts/install.sh
+```
+This builds and installs:
+- `pulse-studio` GUI to `~/.local/bin/pulse-studio`
+- `gadget-host` daemon to `~/.local/bin/gadget-host`
+- FreeDesktop `.desktop` launcher & Nothing dot-matrix icons to system menus.
+
+### Option 2: Pre-compiled GitHub Releases
+Download the latest `pulse-studio-linux-x86_64.tar.gz` from [Releases](https://github.com/mazaheriMahdi/pulse/releases), extract, and run `./scripts/install.sh`.
 
 ---
 
 ## 🔌 Hardware Wiring Diagram
 
-Connect the **3.5" TFT SPI Display (ILI9488 / MSP3520)** to the **Arduino Uno** as follows:
+Connect the **3.5" TFT SPI Display (ILI9488 / MSP3520)** to the **Arduino Uno**:
 
 | Display Pin | Arduino Uno Pin | Purpose |
 |-------------|-----------------|---------|
@@ -22,36 +62,27 @@ Connect the **3.5" TFT SPI Display (ILI9488 / MSP3520)** to the **Arduino Uno** 
 
 ---
 
-## 📊 Dashboard Gauges & Telemetry
+## 🛠️ Architecture & Crates
 
-The 480×320 screen is laid out in two cards with differential rendering:
-- **Left Panel [ CPU & Memory ]**:
-  - **CPU LOAD**: Real-time Linux kernel `/proc/stat` delta percentage (`0–100%`).
-  - **CPU TEMP**: Direct hwmon `k10temp` reading in °C.
-  - **RAM USAGE**: Precise memory usage from `/proc/meminfo` (`0–100%`).
-  - **BATTERY**: Power level from `/sys/class/power_supply` (`0–100%`).
-- **Right Panel [ GPU & Thermal ]**:
-  - **GPU LOAD**: Dedicated NVIDIA GPU utilization queried via `nvidia-smi` (`0–100%`).
-  - **GPU TEMP**: Dedicated NVIDIA GPU core temperature in °C.
-  - **HARDWARE & STATUS**: Real-time thermal status badge (Cool / High / Critical Hot).
+```
+pulse/
+├── software/
+│   ├── gadget-common/       # no_std Telemetry & Configuration packet protocols
+│   ├── gadget-core/         # no_std Embedded graphics & differential screen renderer
+│   ├── gadget-firmware-uno/ # AVR Rust bare-metal firmware for Arduino Uno + ILI9488
+│   ├── gadget-host/         # Linux background telemetry daemon (/proc, nvidia-smi, IPC)
+│   └── pulse-studio/        # Tauri v2 Desktop GUI + Web simulator with Nothing dot styling
+├── enclosure/               # 3D CAD models (.blend) and 3D printable STL files
+├── scripts/                 # install.sh, uninstall.sh, release.sh
+└── .github/workflows/       # CI/CD: Automated testing, GitHub Pages, and Releases
+```
 
 ---
 
-## 🚀 How to Run
+## 🚀 Release & Versioning
 
-### 1. Re-flashing the Arduino Uno Firmware (if modified)
+To trigger a new automated release:
 ```bash
-cd software/gadget-firmware-uno
-cargo +nightly run
+./scripts/release.sh 0.1.0
 ```
-
-### 2. Launch the Laptop Host Daemon
-In your terminal, run:
-```bash
-cd software/gadget-host
-cargo run -- --port /dev/ttyUSB0 --baud 57600
-```
-To test without serial hardware:
-```bash
-cargo run -- --dry-run
-```
+This automatically updates versions across all `Cargo.toml` crates, updates `tauri.conf.json`, tags the release, and triggers the GitHub Actions release workflow.

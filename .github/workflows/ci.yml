@@ -1,0 +1,68 @@
+name: CI — Build & Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  test-rust-crates:
+    name: Test Common, Core & Host Crates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install System Dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libudev-dev pkg-config
+
+      - name: Run Tests (gadget-common)
+        run: cargo test --manifest-path software/gadget-common/Cargo.toml
+
+      - name: Run Tests (gadget-core)
+        run: cargo test --manifest-path software/gadget-core/Cargo.toml
+
+      - name: Run Tests (gadget-host)
+        run: cargo test --manifest-path software/gadget-host/Cargo.toml
+
+  build-studio:
+    name: Build Pulse Studio (Tauri App)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Tauri Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libudev-dev \
+            pkg-config
+
+      - name: Check Pulse Studio Release Build
+        run: |
+          cd software/pulse-studio/src-tauri
+          cargo build --release
