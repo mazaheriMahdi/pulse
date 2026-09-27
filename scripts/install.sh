@@ -104,6 +104,7 @@ chmod +x "${DESKTOP_DIR}/pulse-studio.desktop"
 
 # Refresh desktop & icon databases
 update-desktop-database "${DESKTOP_DIR}" 2>/dev/null || true
+if [ ! -f "${ICON_BASE}/index.theme" ]; then cp /usr/share/icons/hicolor/index.theme "${ICON_BASE}/index.theme" 2>/dev/null || true; fi
 gtk-update-icon-cache -f -t "${ICON_BASE}" 2>/dev/null || true
 
 echo "=========================================="
