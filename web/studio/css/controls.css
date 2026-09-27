@@ -1,0 +1,259 @@
+/* ============================================================
+   PULSE STUDIO — Controls & Interactive Components
+   ============================================================ */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.group > .glabel {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: var(--dim);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ── ACCENT SWATCHES ─────────────────────────────────────────── */
+.swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sw {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--line-hi);
+  cursor: pointer;
+  position: relative;
+  transition: 0.15s;
+}
+
+.sw:hover {
+  transform: scale(1.08);
+}
+
+.sw.on {
+  border-color: #fff;
+}
+
+.sw.on::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+}
+
+.sw[data-c="#ffffff"] { background: #ffffff; }
+.sw[data-c="#d71921"] { background: #d71921; }
+.sw[data-c="#ff5a00"] { background: #ff5a00; }
+.sw[data-c="#2ee6c5"] { background: #2ee6c5; }
+.sw[data-c="#8b8cf9"] { background: #8b8cf9; }
+.sw[data-c="#ffc247"] { background: #ffc247; }
+
+/* ── SEGMENTED REFRESH BUTTONS ───────────────────────────────── */
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.seg button {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line);
+  color: var(--dim);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 9px 0;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.seg button:last-child {
+  border-right: 0;
+}
+
+.seg button:hover {
+  color: var(--text);
+  background: var(--card);
+}
+
+.seg button.on {
+  color: #000;
+  background: #fff;
+}
+
+/* ── SLIDER ──────────────────────────────────────────────────── */
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1 1 auto;
+  height: 2px;
+  background: var(--line-hi);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--line-hi);
+}
+
+.slider .val {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  min-width: 34px;
+  text-align: right;
+}
+
+/* ── TOGGLES (TEENAGE ENGINEERING SWITCHES) ──────────────────── */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  border-bottom: 1px solid var(--line);
+}
+
+.toggle:last-child {
+  border-bottom: 0;
+}
+
+.toggle:hover {
+  color: var(--text);
+}
+
+.toggle .sw-box {
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--dimmer);
+  position: relative;
+  transition: 0.2s;
+  flex: 0 0 auto;
+}
+
+.toggle .sw-box::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #5a5a5a;
+  transition: 0.2s;
+}
+
+.toggle.on .sw-box {
+  background: #fff;
+}
+
+.toggle.on .sw-box::after {
+  left: 16px;
+  background: #000;
+}
+
+.toggle.on {
+  color: var(--text);
+}
+
+/* ── ACTION BUTTONS & FLASH BAR ──────────────────────────────── */
+.btn {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  padding: 0 22px;
+  height: 40px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line-hi);
+  background: transparent;
+  color: var(--dim);
+}
+
+.btn:hover {
+  color: var(--text);
+  border-color: #4a4a4a;
+}
+
+.btn.primary {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.btn.primary:hover {
+  background: #e6e6e6;
+  border-color: #e6e6e6;
+}
+
+.btn.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.flashbar {
+  position: relative;
+  overflow: hidden;
+}
+
+.flashbar .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--orange);
+  transition: width 0.12s linear;
+  z-index: 0;
+}
+
+.flashbar span {
+  position: relative;
+  z-index: 1;
+}
+
+.flashbar.busy {
+  color: #000;
+}

@@ -1,0 +1,545 @@
+/* ============================================================
+   PULSE STUDIO — Face Render Layouts
+   Matches 480×320 Hardware TFT LCD pixel-for-pixel
+   ============================================================ */
+
+.face-viewport {
+  width: 480px;
+  height: 320px;
+  box-sizing: border-box;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  color: var(--acc, #ffffff);
+  background: #000000;
+  position: relative;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────── */
+.face-topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  line-height: 1;
+}
+
+.face-topbar .header-tag {
+  color: var(--acc, #ffffff);
+}
+
+.face-topbar .header-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #6a6a6a;
+}
+
+/* ── HAIRLINE RULES ──────────────────────────────────────────── */
+.hairline-h {
+  width: 100%;
+  height: 1px;
+  background: #262626;
+  margin: 10px 0;
+  flex: 0 0 1px;
+}
+
+.hairline-v {
+  width: 1px;
+  background: #262626;
+  height: 100%;
+  flex: 0 0 1px;
+}
+
+/* ── CIRCULAR DOT BAR ────────────────────────────────────────── */
+.dotbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.dotbar-28 {
+  display: grid;
+  grid-template-columns: repeat(28, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.dotbar-24 {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  width: 100%;
+}
+
+.dotbar-20 {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.dotbar-28 i,
+.dotbar-24 i,
+.dotbar-20 i {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: #1c1c1c;
+  display: block;
+}
+
+.dotbar-28 i.on,
+.dotbar-24 i.on,
+.dotbar-20 i.on {
+  background: var(--acc, #ffffff);
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.dotbar-24 i.on.red,
+.dotbar-28 i.on.red {
+  background: var(--red, #d71921);
+}
+
+/* ── DUAL LOAD LAYOUT (THE GOLD STANDARD) ─────────────────────── */
+.dual-container {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+  margin-top: 4px;
+}
+
+.dual-column {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  justify-content: space-between;
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.column-header .col-title {
+  color: var(--acc, #ffffff);
+}
+
+.column-header .col-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #6a6a6a;
+}
+
+.val-center-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.temp-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.temp-footer-row .lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #6a6a6a;
+}
+
+/* ── SINGLE GAUGE LAYOUT (CPU / GPU GRID) ─────────────────────── */
+.single-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.single-val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.single-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.single-bottom-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.single-bottom-block .sub-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #6a6a6a;
+}
+
+/* ── MEMORY STACK LAYOUT ─────────────────────────────────────── */
+.memory-stack {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  margin: 8px 0;
+}
+
+.memory-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.memory-row .mem-lbl {
+  width: 44px;
+  flex: 0 0 44px;
+}
+
+.memory-row .mem-val {
+  width: 54px;
+  flex: 0 0 54px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #6a6a6a;
+}
+
+/* ── THERMAL DUAL LAYOUT ─────────────────────────────────────── */
+.thermal-dual-container {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: stretch;
+  margin-top: 4px;
+}
+
+/* ── MINIMAL LAYOUT ──────────────────────────────────────────── */
+.minimal-container {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+/* ── NETWORK USAGE LAYOUT ────────────────────────────────────── */
+.net-viewport {
+  justify-content: space-between;
+  padding: 22px 24px;
+}
+
+.net-viewport .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.net-viewport .head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.net-viewport .tag {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #888888;
+  text-transform: uppercase;
+}
+
+.net-viewport .rule {
+  height: 1px;
+  background: #1c1c1c;
+  width: 100%;
+}
+
+.net-viewport .cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  padding: 6px 0 0 0;
+}
+
+.net-viewport .col {
+  display: flex;
+  flex-direction: column;
+}
+
+.net-viewport .col.right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.net-viewport .col-lbl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.net-viewport .arrow {
+  font-size: 13px;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.net-viewport .numeral-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1;
+}
+
+.net-viewport .col.right .numeral-wrap {
+  justify-content: flex-end;
+}
+
+.net-viewport .unit {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #777777;
+  margin-top: 6px;
+}
+
+.net-viewport .bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.net-viewport .foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #777777;
+}
+
+.net-viewport .foot-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.net-viewport .status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+}
+
+.net-viewport .status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* ============================================================
+   CLOCK FACE — 480 × 320
+   Nothing × Teenage Engineering · dot matrix
+   ============================================================ */
+.face-clock {
+  width: 480px;
+  height: 320px;
+  background: #000000;
+  color: #ffffff;
+  padding: 18px 26px 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+
+.face-clock .head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  line-height: 1;
+}
+
+.face-clock .head .title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .30em;
+  color: #ffffff;
+}
+
+.face-clock .head .tz {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  color: #6a6a6a;
+}
+
+.face-clock .time {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 2px 0 4px;
+  line-height: 0;
+}
+
+.face-clock .time .grp {
+  color: var(--acc, #ffffff);
+}
+
+.face-clock .time .sep {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 0 2px;
+  transform: translateY(-6px);
+}
+
+.face-clock .time .sep i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red, #d71921);
+  display: block;
+  animation: clockBlink 2s steps(2, end) infinite;
+}
+
+@keyframes clockBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: .15; }
+}
+
+.face-clock .meridiem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 6px;
+  align-self: center;
+}
+
+.face-clock .meridiem span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  color: #333333;
+}
+
+.face-clock .meridiem span.on {
+  color: #ffffff;
+}
+
+.face-clock .seconds {
+  display: grid;
+  grid-template-columns: repeat(60, 1fr);
+  gap: 3px;
+  margin: 2px 0 10px;
+}
+
+.face-clock .seconds i {
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background: #141414;
+  transition: background .2s ease;
+}
+
+.face-clock .seconds i.past {
+  background: #3a3a3a;
+}
+
+.face-clock .seconds i.now {
+  background: var(--red, #d71921);
+}
+
+.face-clock .seconds i.five {
+  background: #2a2a2a;
+}
+
+.face-clock .foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #141414;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  line-height: 1;
+}
+
+.face-clock .foot .day {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.face-clock .foot .day .dow {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: .24em;
+}
+
+.face-clock .foot .day .date {
+  color: #6a6a6a;
+}
+
+.face-clock .foot .meta {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  color: #6a6a6a;
+}
+
+.face-clock .foot .meta b {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.face-clock .ruler {
+  display: grid;
+  grid-template-columns: repeat(48, 1fr);
+  align-items: end;
+  gap: 0;
+  margin-top: 8px;
+  height: 10px;
+}
+
+.face-clock .ruler i {
+  justify-self: center;
+  width: 2px;
+  height: 4px;
+  border-radius: 1px;
+  background: #1e1e1e;
+}
+
+.face-clock .ruler i.tall {
+  height: 8px;
+  background: #333333;
+}
+

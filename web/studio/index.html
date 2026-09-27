@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PULSE STUDIO — Gadget Control Software</title>
+  
+  <!-- Modular Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/controls.css">
+  <link rel="stylesheet" href="css/screen.css">
+  <link rel="stylesheet" href="css/faces.css">
+  <link rel="stylesheet" href="css/splash.css">
+</head>
+<body>
+
+<!-- Nothing OS Boot Splash Screen Overlay -->
+<div class="splash-overlay" id="splashOverlay"></div>
+
+<div class="app">
+
+  <!-- ============ TITLE BAR ============ -->
+  <header class="titlebar">
+    <div class="tb-left">
+      <div class="tb-mark" id="tbMark">
+        <span class="blip"></span>
+        <span class="tb-pulse-logo" id="tbPulseLogo"></span>
+        <span class="tb-divider"></span>
+        <span class="tb-studio-logo" id="tbStudioLogo"></span>
+      </div>
+      <div class="tb-conn live" id="connPill">
+        <span class="dot"></span>
+        <span id="connText">CONNECTING…</span>
+      </div>
+    </div>
+
+    <div class="tb-right">
+      <div class="tb-port">
+        PORT
+        <select id="portSel">
+          <option>/dev/ttyUSB1</option>
+          <option>/dev/ttyUSB0</option>
+          <option>/dev/ttyACM0</option>
+        </select>
+      </div>
+      <div class="tb-wctl">
+        <i id="btnMin" title="minimize"></i>
+        <i id="btnMax" class="sq" title="maximize"></i>
+        <i id="btnClose" class="red" title="close"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ BODY : 3 COLUMNS ============ -->
+  <div class="body">
+
+    <!-- ---------- FACE LIBRARY ---------- -->
+    <aside class="library">
+      <div class="col-head">
+        <span class="t">FACE LIBRARY</span>
+        <span class="n" id="faceCount">7 FACES</span>
+      </div>
+      <div class="lib-scroll">
+        <div class="lib-grid" id="faceGrid"></div>
+      </div>
+    </aside>
+
+    <!-- ---------- LIVE PREVIEW ---------- -->
+    <main class="stage">
+      <div class="stage-head">
+        <span class="t">LIVE PREVIEW</span>
+        <span class="m"><span class="live"></span><span id="streamRate">STREAMING · 5 HZ</span></span>
+      </div>
+
+      <div class="preview-area" id="previewArea">
+        <div class="preview-scaler" id="previewScaler">
+          <div class="screen" id="screen"></div>
+        </div>
+      </div>
+
+      <div class="stage-foot">
+        <span>480 × 320 · IPS · ILI9488</span>
+        <span class="now" id="previewName">DUAL LOAD</span>
+      </div>
+    </main>
+
+    <!-- ---------- SETTINGS ---------- -->
+    <aside class="settings">
+      <div class="col-head">
+        <span class="t">FACE SETTINGS</span>
+        <span class="n" id="setName">DUAL LOAD</span>
+      </div>
+
+      <div class="set-scroll">
+
+        <div class="group">
+          <div class="glabel">ACCENT</div>
+          <div class="swatches" id="swatches">
+            <div class="sw on" data-c="#ffffff"></div>
+            <div class="sw" data-c="#d71921"></div>
+            <div class="sw" data-c="#ff5a00"></div>
+            <div class="sw" data-c="#2ee6c5"></div>
+            <div class="sw" data-c="#8b8cf9"></div>
+            <div class="sw" data-c="#ffc247"></div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">REFRESH RATE</div>
+          <div class="seg" id="refreshSeg">
+            <button data-v="1">1 HZ</button>
+            <button data-v="2">2 HZ</button>
+            <button data-v="5" class="on">5 HZ</button>
+            <button data-v="10">10 HZ</button>
+            <button data-v="20">20 HZ</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">BRIGHTNESS</div>
+          <div class="slider">
+            <input type="range" id="brightness" min="10" max="100" value="80">
+            <span class="val" id="brightnessVal">80%</span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">DISPLAY</div>
+          <div class="toggle on" data-k="label">
+            <span>SHOW LABEL</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle on" data-k="temp">
+            <span>SHOW TEMPERATURE</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle on" data-k="units">
+            <span>SHOW UNITS</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle" data-k="invert">
+            <span>INVERT (LIGHT THEME)</span><span class="sw-box"></span>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="glabel">DEVICE</div>
+          <div class="toggle on" data-k="auto">
+            <span>AUTO-REFRESH PREVIEW</span><span class="sw-box"></span>
+          </div>
+          <div class="toggle on" data-k="keep">
+            <span>KEEP AWAKE ON USB</span><span class="sw-box"></span>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ============ STATUS BAR ============ -->
+  <footer class="statusbar">
+    <div class="sb-info">
+      <span>DEVICE <b>ATMEGA328P</b></span>
+      <span>PORT <b>/dev/ttyUSB1</b></span>
+      <span>FW <b>1.0.0</b></span>
+      <span id="sbStatus">READY</span>
+    </div>
+    <div class="sb-actions">
+      <button class="btn" id="saveBtn">SAVE PRESET</button>
+      <button class="btn" id="loadBtn">LOAD PRESET</button>
+      <button class="btn primary flashbar" id="flashBtn">
+        <span class="fill" id="flashFill"></span>
+        <span id="flashLabel">FLASH TO GADGET →</span>
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<!-- Application Controller Module -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

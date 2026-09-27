@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PULSE — Desktop Hardware Monitor & Studio</title>
+  <meta name="description" content="Ultra-refined desktop telemetry monitor and control studio in 100% Rust for AVR / Arduino Uno and Linux desktops.">
+
+  <link rel="icon" type="image/svg+xml" href="studio/icons/icon.svg">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       STICKY HEADER / NAVIGATION
+       ============================================================ -->
+  <header class="header">
+    <div class="container nav-bar">
+      <a href="#" class="nav-brand">
+        <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+          <circle cx="6" cy="6" r="3" fill="#ffffff" />
+          <circle cx="16" cy="6" r="3" fill="#ffffff" />
+          <circle cx="26" cy="6" r="3" fill="#ffffff" />
+          <circle cx="6" cy="16" r="3" fill="#ffffff" />
+          <circle cx="16" cy="16" r="3" fill="#ffffff" />
+          <circle cx="26" cy="16" r="3" fill="#ffffff" />
+          <circle cx="6" cy="26" r="3" fill="#ffffff" />
+          <circle cx="16" cy="26" r="3" fill="#d71920" />
+          <circle cx="26" cy="26" r="3" fill="#ffffff" />
+        </svg>
+        <span class="brand-label">PULSE // STUDIO</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#simulator">SIMULATOR</a></li>
+        <li><a href="#faces">FACES</a></li>
+        <li><a href="#architecture">ARCHITECTURE</a></li>
+        <li><a href="#releases">RELEASES</a></li>
+        <li><a href="#wiring">WIRING</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="studio/" class="btn btn-secondary btn-sm" target="_blank">LAUNCH STUDIO ↗</a>
+        <a href="https://github.com/mazaheriMahdi/pulse" class="btn btn-primary btn-sm" target="_blank">GITHUB ★</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       HERO SECTION WITH INTERACTIVE CHASSIS
+       ============================================================ -->
+  <section class="hero-section" id="simulator">
+    <div class="container">
+      <div class="hero-meta">
+        <span class="tag red"><span class="dot-led"></span> v0.1.0 STABLE</span>
+        <span class="tag">NOTHING (R) × TEENAGE ENGINEERING</span>
+        <span class="tag">100% RUST</span>
+      </div>
+
+      <h1 class="hero-title">
+        REAL-TIME HARDWARE PULSE<br>FOR YOUR DESKTOP<span class="red-dot">.</span>
+      </h1>
+
+      <p class="hero-desc">
+        A desktop telemetry monitor and control studio crafted in 100% Rust for microcontrollers (AVR / Arduino Uno + 3.5" IPS display) and Linux desktops, following the Nothing OS dot-matrix hardware design language.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="#releases" class="btn btn-primary">DOWNLOAD v0.1.0 (LINUX)</a>
+        <a href="https://github.com/mazaheriMahdi/pulse/releases/download/v0.1.0/gadget-firmware-uno.hex" class="btn btn-secondary">UNO FIRMWARE (.HEX)</a>
+        <a href="studio/" class="btn btn-secondary" target="_blank">WEB SIMULATOR ↗</a>
+      </div>
+
+      <!-- Live Gadget Simulator Chassis -->
+      <div class="gadget-showcase-container">
+        <div class="gadget-chassis">
+          <div class="chassis-header">
+            <div class="chassis-screws">
+              <div class="screw"></div>
+              <div class="screw"></div>
+            </div>
+            <span>MODEL: PLS-01 · 480×320 IPS · ZERO-HEAP SPI</span>
+            <div class="chassis-screws">
+              <div class="screw"></div>
+              <div class="screw"></div>
+            </div>
+          </div>
+
+          <!-- LCD Viewport -->
+          <div class="screen-viewport" id="hero-viewport">
+            <div class="screen-content" id="hero-screen">
+              <!-- Dynamically populated by landing.js -->
+            </div>
+          </div>
+
+          <div class="chassis-footer">
+            <span>BAUD: 115200</span>
+            <span>NOTHING DOT SYSTEM 5×7</span>
+            <span>TEENAGE ENGINEERING RULER</span>
+          </div>
+        </div>
+
+        <!-- Face Selector Pills -->
+        <div class="face-selector-bar">
+          <button class="face-btn active" data-face="dual" onclick="setFace('dual')">DUAL LOAD</button>
+          <button class="face-btn" data-face="clock" onclick="setFace('clock')">CLOCK</button>
+          <button class="face-btn" data-face="cpu" onclick="setFace('cpu')">CPU GRID</button>
+          <button class="face-btn" data-face="net" onclick="setFace('net')">NETWORK</button>
+          <button class="face-btn" data-face="gpu" onclick="setFace('gpu')">GPU GRID</button>
+          <button class="face-btn" data-face="mem" onclick="setFace('mem')">MEMORY</button>
+          <button class="face-btn" data-face="thermal" onclick="setFace('thermal')">THERMAL</button>
+          <button class="face-btn" data-face="minimal" onclick="setFace('minimal')">MINIMAL</button>
+        </div>
+      </div>
+
+      <!-- Quick Install Box -->
+      <div class="quick-install-box">
+        <div class="quick-install-code">
+          <span class="prompt">$ </span>curl -fsSL https://raw.githubusercontent.com/mazaheriMahdi/pulse/master/scripts/install.sh | bash
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-copy-install" onclick="copyCommand('curl -fsSL https://raw.githubusercontent.com/mazaheriMahdi/pulse/master/scripts/install.sh | bash', 'btn-copy-install')">COPY</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ARCHITECTURE & FEATURES
+       ============================================================ -->
+  <section class="section" id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">01 // ENGINEERING</div>
+        <h2 class="section-title">BUILT ON 100% PURE RUST</h2>
+        <p class="section-sub">Engineered from bare-metal 8-bit AVR microcontrollers to desktop Linux daemons and modern Tauri GUI.</p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-num">[ 01.1 ]</div>
+          <h3 class="feature-title">Zero-Heap Differential LCD Engine</h3>
+          <p class="feature-desc">`gadget-core` executes strictly without heap allocations, updating only altered 5×7 numerals over SPI to achieve 60 FPS flicker-free updates on ATmega328P.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-num">[ 01.2 ]</div>
+          <h3 class="feature-title">Microsecond Telemetry Daemon</h3>
+          <p class="feature-desc">`gadget-host` samples Linux `/proc/stat`, `/proc/net/dev`, `nvidia-smi`, and thermal hwmon directly with negligible CPU overhead (< 0.1%).</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-num">[ 01.3 ]</div>
+          <h3 class="feature-title">Type-Safe Binary Packet Protocol</h3>
+          <p class="feature-desc">16-byte packed frame structs shared across `no_std` embedded firmware and host daemon with CRC-16 checksum integrity validation.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-num">[ 01.4 ]</div>
+          <h3 class="feature-title">Desktop Studio & Web Simulator</h3>
+          <p class="feature-desc">Tauri v2 desktop suite with serial auto-discovery, live simulation preview, and automated installer registering system `.desktop` launchers.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FACE GALLERY SHOWCASE
+       ============================================================ -->
+  <section class="section" id="faces">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">02 // FACE GALLERY</div>
+        <h2 class="section-title">8 HANDCRAFTED DOT FACES</h2>
+        <p class="section-sub">Every pixel and dot matrix numeral follows the authentic Nothing (R) OS × Teenage Engineering visual standards.</p>
+      </div>
+
+      <div class="gallery-grid" id="face-gallery-grid">
+        <!-- Dynamically rendered by landing.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       RELEASES & DOWNLOADS
+       ============================================================ -->
+  <section class="section" id="releases">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">03 // DOWNLOADS</div>
+        <h2 class="section-title">LATEST RELEASES & BINARIES</h2>
+        <p class="section-sub">Download pre-compiled binaries for Linux desktops and Arduino Uno firmware.</p>
+      </div>
+
+      <div class="release-hero-card">
+        <div class="release-version-badge">
+          <span class="dot-led"></span>
+          <div>
+            <div class="version-pill">PULSE v0.1.0</div>
+            <div style="font-size: 11px; color: var(--text-muted);">INITIAL PRODUCTION RELEASE · RUST 1.80+</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a href="https://github.com/mazaheriMahdi/pulse/releases/download/v0.1.0/pulse-studio-linux-x86_64.tar.gz" class="btn btn-primary">DOWNLOAD STUDIO (.TAR.GZ)</a>
+          <a href="https://github.com/mazaheriMahdi/pulse/releases/download/v0.1.0/gadget-firmware-uno.hex" class="btn btn-secondary">UNO FIRMWARE (.HEX)</a>
+        </div>
+      </div>
+
+      <table class="release-assets-table">
+        <thead>
+          <tr>
+            <th>ASSET NAME</th>
+            <th>TARGET PLATFORM</th>
+            <th>TYPE</th>
+            <th>DOWNLOAD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>pulse-studio-linux-x86_64.tar.gz</strong></td>
+            <td>Linux (x86_64)</td>
+            <td>Desktop App + Daemon + Installer</td>
+            <td><a href="https://github.com/mazaheriMahdi/pulse/releases/download/v0.1.0/pulse-studio-linux-x86_64.tar.gz" class="asset-link">DOWNLOAD ↗</a></td>
+          </tr>
+          <tr>
+            <td><strong>gadget-firmware-uno.hex</strong></td>
+            <td>Arduino Uno (ATmega328P)</td>
+            <td>AVR Bare-Metal Binary</td>
+            <td><a href="https://github.com/mazaheriMahdi/pulse/releases/download/v0.1.0/gadget-firmware-uno.hex" class="asset-link">DOWNLOAD ↗</a></td>
+          </tr>
+          <tr>
+            <td><strong>Source Code (tar.gz)</strong></td>
+            <td>All Platforms</td>
+            <td>Source Repository</td>
+            <td><a href="https://github.com/mazaheriMahdi/pulse/archive/refs/tags/v0.1.0.tar.gz" class="asset-link">DOWNLOAD ↗</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       HARDWARE PINOUT & WIRING
+       ============================================================ -->
+  <section class="section" id="wiring">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">04 // HARDWARE SETUP</div>
+        <h2 class="section-title">WIRING SCHEMATIC</h2>
+        <p class="section-sub">Pinout connections between Arduino Uno (ATmega328P) and the 3.5" ILI9488 TFT SPI display.</p>
+      </div>
+
+      <div class="wiring-grid">
+        <div class="wiring-card">
+          <h3 style="font-size: 15px; color: #fff; margin-bottom: 12px;">SPI DISPLAY PINOUT</h3>
+          <table class="wiring-table">
+            <thead>
+              <tr>
+                <th>DISPLAY PIN</th>
+                <th>ARDUINO PIN</th>
+                <th>PURPOSE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>VCC</strong></td><td><span class="pin-badge red">5V / 3.3V</span></td><td>Power Supply</td></tr>
+              <tr><td><strong>GND</strong></td><td><span class="pin-badge">GND</span></td><td>Ground</td></tr>
+              <tr><td><strong>SDI (MOSI)</strong></td><td><span class="pin-badge red">PIN 11</span></td><td>Hardware SPI MOSI</td></tr>
+              <tr><td><strong>SCK (CLK)</strong></td><td><span class="pin-badge red">PIN 13</span></td><td>Hardware SPI Clock</td></tr>
+              <tr><td><strong>CS</strong></td><td><span class="pin-badge">PIN 10</span></td><td>SPI Chip Select</td></tr>
+              <tr><td><strong>DC / RS</strong></td><td><span class="pin-badge">PIN 9</span></td><td>Data / Command</td></tr>
+              <tr><td><strong>RESET</strong></td><td><span class="pin-badge">PIN 8</span></td><td>Hardware Reset</td></tr>
+              <tr><td><strong>LED</strong></td><td><span class="pin-badge">3.3V</span></td><td>Backlight</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="wiring-card">
+          <h3 style="font-size: 15px; color: #fff; margin-bottom: 12px;">FLASHING INSTRUCTIONS</h3>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+            Flash the pre-compiled `.hex` firmware to your Arduino Uno using <code>avrdude</code>:
+          </p>
+          <div style="background: #080808; border: 1px solid #222; padding: 12px; border-radius: 4px; font-size: 12px; color: #ddd; overflow-x: auto; margin-bottom: 16px;">
+            <code>avrdude -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:gadget-firmware-uno.hex:i</code>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim);">
+            After flashing, plug the USB cable into your Linux PC and run <code>gadget-host</code> or launch <strong>Pulse Studio</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-ruler"></div>
+      <div class="footer-content">
+        <div>
+          <div style="font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.1em; margin-bottom: 6px;">PULSE // GADGET & STUDIO</div>
+          <div style="color: var(--text-muted);">Crafted in 100% Rust · Nothing (R) × Teenage Engineering Design</div>
+        </div>
+        <div style="display: flex; gap: 20px;">
+          <a href="https://github.com/mazaheriMahdi/pulse" style="color: var(--text-muted); text-decoration: none;" target="_blank">GITHUB REPO</a>
+          <a href="studio/" style="color: var(--text-muted); text-decoration: none;" target="_blank">WEB STUDIO</a>
+          <a href="https://github.com/mazaheriMahdi/pulse/releases" style="color: var(--text-muted); text-decoration: none;" target="_blank">RELEASES</a>
+        </div>
+      </div>
+      <div style="font-size: 11px; color: var(--text-dim);">
+        MIT License © 2026 Mahdi Mazaheri · Not affiliated with Nothing Technology Limited or Teenage Engineering.
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/landing.js"></script>
+</body>
+</html>
