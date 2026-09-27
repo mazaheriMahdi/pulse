@@ -6,6 +6,7 @@ import { AVAILABLE_FACES, ACCENT_PALETTE, DEFAULT_SETTINGS } from './constants.j
 import { store } from './state.js';
 import { renderFace } from './faces.js';
 import { renderThumbnail } from './thumbnails.js';
+import { renderDotLogo } from './font.js';
 import { BootSplashController } from './splash.js';
 import {
   fetchTelemetry,
@@ -368,6 +369,12 @@ function bootstrap() {
       console.log('[Boot] Nothing OS splash sequence completed, Studio active.');
     });
   }
+
+  // Render Titlebar Dot Logos
+  const tbPulseEl = document.getElementById('tbPulseLogo');
+  const tbStudioEl = document.getElementById('tbStudioLogo');
+  if (tbPulseEl) tbPulseEl.innerHTML = renderDotLogo('PULSE', 2.8);
+  if (tbStudioEl) tbStudioEl.innerHTML = renderDotLogo('STUDIO', 1.8);
 
   initFaceLibrary();
   initControls();

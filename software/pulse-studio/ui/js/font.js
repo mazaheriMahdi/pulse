@@ -112,3 +112,41 @@ export function renderDotBar(percent, totalDots, isHot = false) {
   html += '</div>';
   return html;
 }
+
+/**
+ * Render text as a 5×7 dot-matrix SVG with optional stagger wave animation.
+ * Nothing × Teenage Engineering design.
+ *
+ * @param {string} text
+ * @param {number} cell
+ * @param {object} [opts] { stagger: bool, className: string, showUnlit: bool }
+ * @returns {string} SVG markup
+ */
+export function renderDotLogo(text, cell, opts = {}) {
+  const chars = [...String(text).toUpperCase()];
+  const GAP = 1;
+  const cols = chars.length * 5 + Math.max(0, chars.length - 1) * GAP;
+  const rows = 7;
+
+  let dots = '';
+  let idx = 0;
+
+  chars.forEach((ch, i) => {
+    const g = NDOT_GLYPHS[ch] || NDOT_GLYPHS[' '];
+    const ox = i * (5 + GAP);
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < 5; x++) {
+        const isLit = g[y] && g[y][x] === '1';
+        if (isLit) {
+          const delay = opts.stagger ? (idx * 0.018).toFixed(2) + 's' : '0s';
+          dots += `<circle cx="${ox + x + 0.5}" cy="${y + 0.5}" r="0.45" style="animation-delay:${delay}"/>`;
+        } else if (opts.showUnlit) {
+          dots += `<circle cx="${ox + x + 0.5}" cy="${y + 0.5}" r="0.32" fill="#181818"/>`;
+        }
+        idx++;
+      }
+    }
+  });
+
+  return `<svg class="dm ${opts.className || ''}" width="${cols * cell}" height="${rows * cell}" viewBox="0 0 ${cols} ${rows}">${dots}</svg>`;
+}

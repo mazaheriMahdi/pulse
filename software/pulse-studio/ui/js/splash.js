@@ -2,7 +2,7 @@
    PULSE STUDIO — Nothing (R) OS Boot Splash Sequence Controller
    ============================================================ */
 
-import { renderNdot } from './font.js';
+import { renderNdot, renderDotLogo } from './font.js';
 import { fetchBootStatus } from './ipc.js';
 
 const BOOT_STEPS = [
@@ -29,8 +29,7 @@ export class BootSplashController {
           <div class="boot-brand">
             <span class="boot-blip"></span>
             <div class="boot-title">
-              <div id="splashNdotLogo"></div>
-              <span class="sub">NOTHING (R) OS // BOOT PROTOCOL</span>
+              <span class="sub">PULSE STUDIO // HARDWARE BOOT PROTOCOL</span>
             </div>
           </div>
           <div class="boot-badge" id="splashBadge">
@@ -38,6 +37,8 @@ export class BootSplashController {
             <span id="splashBadgeText">INITIALIZING</span>
           </div>
         </div>
+
+        <div class="logo-anim" id="splashAnimLogo"></div>
 
         <div class="boot-console" id="splashConsole">
           ${BOOT_STEPS.map(
@@ -70,10 +71,10 @@ export class BootSplashController {
       </div>
     `;
 
-    // Render NDot Logo
-    const logoEl = document.getElementById('splashNdotLogo');
-    if (logoEl) {
-      logoEl.innerHTML = renderNdot('PULSE', 3);
+    // Render Animated Dot Logo (Sweeping Wave Highlight)
+    const animLogoEl = document.getElementById('splashAnimLogo');
+    if (animLogoEl) {
+      animLogoEl.innerHTML = renderDotLogo('PULSE', 10, { stagger: true });
     }
 
     return new Promise((resolve) => {

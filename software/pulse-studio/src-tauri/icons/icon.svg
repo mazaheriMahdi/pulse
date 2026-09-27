@@ -1,114 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <filter id="glow-white" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="6" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
-    <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
-  </defs>
-  <rect x="24" y="24" width="464" height="464" rx="90" ry="90" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="3" />
-  <circle cx="76.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="116.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="76.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="116.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="116.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="116.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="116.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="156.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="196.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="236.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="236.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="236.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="236.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="236.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="276.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="316.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="356.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="396.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="76.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="116.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="156.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="196.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="236.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="276.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="316.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="356.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="396.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="436.0" cy="436.0" r="13.5" fill="#181818" stroke="#222222" stroke-width="1" />
-  <circle cx="116.0" cy="116.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="156.0" cy="116.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="196.0" cy="116.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="236.0" cy="116.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="276.0" cy="116.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="396.0" cy="116.0" r="13.5" fill="#d71921" filter="url(#glow-red)" />
-  <circle cx="396.0" cy="116.0" r="5.4" fill="#ff8080" opacity="0.9" />
-  <circle cx="116.0" cy="156.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="316.0" cy="156.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="116.0" cy="196.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="316.0" cy="196.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="116.0" cy="236.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="156.0" cy="236.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="196.0" cy="236.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="236.0" cy="236.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="276.0" cy="236.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="116.0" cy="276.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="116.0" cy="316.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="116.0" cy="356.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
-  <circle cx="116.0" cy="396.0" r="13.5" fill="#ffffff" filter="url(#glow-white)" />
+  <rect width="512" height="512" fill="#000000" />
+  <circle cx="150.67" cy="98.01" r="23.70" fill="#ffffff" />
+  <circle cx="203.34" cy="98.01" r="23.70" fill="#ffffff" />
+  <circle cx="256.00" cy="98.01" r="23.70" fill="#ffffff" />
+  <circle cx="308.66" cy="98.01" r="23.70" fill="#ffffff" />
+  <circle cx="150.67" cy="150.67" r="23.70" fill="#ffffff" />
+  <circle cx="361.33" cy="150.67" r="23.70" fill="#ffffff" />
+  <circle cx="150.67" cy="203.34" r="23.70" fill="#ffffff" />
+  <circle cx="361.33" cy="203.34" r="23.70" fill="#ffffff" />
+  <circle cx="150.67" cy="256.00" r="23.70" fill="#ffffff" />
+  <circle cx="203.34" cy="256.00" r="23.70" fill="#ffffff" />
+  <circle cx="256.00" cy="256.00" r="23.70" fill="#ffffff" />
+  <circle cx="308.66" cy="256.00" r="23.70" fill="#ffffff" />
+  <circle cx="150.67" cy="308.66" r="23.70" fill="#ffffff" />
+  <circle cx="150.67" cy="361.33" r="23.70" fill="#ffffff" />
+  <circle cx="150.67" cy="413.99" r="23.70" fill="#ffffff" />
 </svg>
