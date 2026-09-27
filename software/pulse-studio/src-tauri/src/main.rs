@@ -202,6 +202,7 @@ fn send_config(config: StudioConfig) -> Result<String, String> {
         "thermal" => 4,
         "minimal" => 5,
         "network" => 6,
+        "clock" => 7,
         _ => 2,
     };
 

@@ -127,6 +127,7 @@ impl Dashboard {
             4 => self.draw_thermal_shell(display, bg, fg, dim, line, dot_off),
             5 => self.draw_minimal_shell(display, bg, dim, line, dot_off),
             6 => self.draw_network_shell(display, bg, fg, dim, line, dot_off),
+            7 => self.draw_clock_shell(display, bg, fg, dim, line, dot_off),
             _ => self.draw_dual_shell(display, bg, fg, dim, line, dot_off),
         }
 
@@ -152,6 +153,7 @@ impl Dashboard {
             4 => self.update_thermal(display, delay, packet.cpu_temp_c, packet.gpu_temp_c),
             5 => self.update_minimal(display, delay, packet.cpu_percent),
             6 => self.update_network(display, delay, packet),
+            7 => self.update_clock(display, packet),
             _ => self.update_dual(display, delay, packet),
         }
 
@@ -673,6 +675,168 @@ impl Dashboard {
             draw_ascii(display, PAD_X, 236, &buf, dim, bg, 1);
             self.prev_temp1 = packet.cpu_temp_c;
             self.prev_temp2 = packet.gpu_temp_c;
+        }
+    }
+
+    fn draw_clock_shell<D: Display>(
+        &self,
+        display: &mut D,
+        bg: Color,
+        fg: Color,
+        dim: Color,
+        line: Color,
+        _dot_off: Color,
+    ) {
+        // Header
+        if self.config.show_label() {
+            draw_ndot_str(display, 26, 18, b"CLOCK", 3, fg, bg);
+        }
+        draw_ascii(display, WIDTH - 26 - 102, 24, b"LOCAL . UTC+03:30", dim, bg, 1);
+
+        // Blinking Colon (Red)
+        let red = Color::new(215, 25, 33);
+        display.fill_rect(214, 88, 8, 8, red);
+        display.fill_rect(214, 126, 8, 8, red);
+
+        // Meridiem default
+        draw_ascii(display, 398, 82, b"AM", fg, bg, 1);
+        draw_ascii(display, 398, 112, b"PM", Color::new(40, 40, 40), bg, 1);
+
+        // Initial 60 unlit seconds dots
+        let sec_w = WIDTH - 52; // 428
+        for i in 0..60 {
+            let cx = 26 + ((i as u32 * (sec_w as u32 - 4)) / 59) as u16;
+            let dot_col = if i % 5 == 0 { Color::new(42, 42, 42) } else { Color::new(20, 20, 20) };
+            display.fill_rect(cx, 178, 4, 4, dot_col);
+        }
+
+        // Footer top rule
+        display.draw_hline(26, 208, sec_w, line);
+
+        // Footer labels
+        draw_ascii(display, 356, 224, b"TIME", dim, bg, 1);
+
+        // TE Ruler across bottom edge (48 ticks)
+        for i in 0..48 {
+            let tx = 26 + ((i as u32 * (sec_w as u32 - 2)) / 47) as u16;
+            if i % 6 == 0 {
+                display.fill_rect(tx, 252, 2, 8, Color::new(51, 51, 51));
+            } else {
+                display.fill_rect(tx, 256, 2, 4, Color::new(30, 30, 30));
+            }
+        }
+    }
+
+    fn update_clock<D: Display>(
+        &mut self,
+        display: &mut D,
+        packet: TelemetryPacket,
+    ) {
+        let (bg, fg, dim, _line, _dot_off) = self.get_palette();
+        let red = Color::new(215, 25, 33);
+
+        let h24 = packet.cpu_percent;
+        let m = packet.cpu_temp_c;
+        let s = packet.ram_percent;
+        let day = packet.gpu_percent;
+        let month_and_dow = packet.gpu_temp_c;
+
+        let h12 = if h24 == 0 || h24 == 12 { 12 } else { h24 % 12 };
+        let is_pm = h24 >= 12;
+
+        let dow_idx = (month_and_dow >> 4) & 0x07;
+        let month_idx = month_and_dow & 0x0F;
+
+        // 1. Hours update
+        if h24 != self.prev_val1 {
+            let h0 = (h12 / 10) + b'0';
+            let h1 = (h12 % 10) + b'0';
+            draw_ndot_char(display, 58, 56, h0, 14, fg, bg);
+            display.fill_rect(58 + 70, 56, 8, 98, bg);
+            draw_ndot_char(display, 58 + 78, 56, h1, 14, fg, bg);
+
+            // Update AM/PM
+            let am_col = if !is_pm { fg } else { Color::new(40, 40, 40) };
+            let pm_col = if is_pm { fg } else { Color::new(40, 40, 40) };
+            draw_ascii(display, 398, 82, b"AM", am_col, bg, 1);
+            draw_ascii(display, 398, 112, b"PM", pm_col, bg, 1);
+
+            self.prev_val1 = h24;
+        }
+
+        // 2. Minutes update
+        if m != self.prev_val2 {
+            let m0 = (m / 10) + b'0';
+            let m1 = (m % 10) + b'0';
+            draw_ndot_char(display, 238, 56, m0, 14, fg, bg);
+            display.fill_rect(238 + 70, 56, 8, 98, bg);
+            draw_ndot_char(display, 238 + 78, 56, m1, 14, fg, bg);
+
+            self.prev_val2 = m;
+        }
+
+        // 3. Colon Blink
+        let colon_on = (s % 2) == 0;
+        let colon_col = if colon_on { red } else { Color::new(40, 10, 15) };
+        display.fill_rect(214, 88, 8, 8, colon_col);
+        display.fill_rect(214, 126, 8, 8, colon_col);
+
+        // 4. Seconds bar update (60 dots)
+        let sec_w = WIDTH - 52;
+        if s != self.curr_dots1 {
+            let prev_s = self.curr_dots1;
+
+            if s == 0 {
+                // Reset whole bar
+                for i in 0..60 {
+                    let cx = 26 + ((i as u32 * (sec_w as u32 - 4)) / 59) as u16;
+                    let dot_col = if i == 0 { red } else if i % 5 == 0 { Color::new(42, 42, 42) } else { Color::new(20, 20, 20) };
+                    display.fill_rect(cx, 178, 4, 4, dot_col);
+                }
+            } else {
+                // Clear previous active dot to past gray
+                if (prev_s as usize) < 60 {
+                    let cx = 26 + ((prev_s as u32 * (sec_w as u32 - 4)) / 59) as u16;
+                    display.fill_rect(cx, 178, 4, 4, Color::new(58, 58, 58));
+                }
+                // Light current active dot in red
+                if (s as usize) < 60 {
+                    let cx = 26 + ((s as u32 * (sec_w as u32 - 4)) / 59) as u16;
+                    display.fill_rect(cx, 178, 4, 4, red);
+                }
+            }
+            self.curr_dots1 = s;
+
+            // Update footer seconds number
+            let mut s_buf = [b'0', b'0'];
+            s_buf[0] = (s / 10) + b'0';
+            s_buf[1] = (s % 10) + b'0';
+            draw_ascii(display, 400, 224, &s_buf, fg, bg, 1);
+        }
+
+        // 5. Date & Day of Week update
+        if day != self.prev_temp1 || month_and_dow != self.prev_temp2 {
+            let dows: [&[u8; 3]; 7] = [b"SUN", b"MON", b"TUE", b"WED", b"THU", b"FRI", b"SAT"];
+            let mons: [&[u8; 3]; 12] = [
+                b"JAN", b"FEB", b"MAR", b"APR", b"MAY", b"JUN",
+                b"JUL", b"AUG", b"SEP", b"OCT", b"NOV", b"DEC",
+            ];
+
+            let dow_str = dows[(dow_idx as usize) % 7];
+            let mon_str = mons[(month_idx.saturating_sub(1) as usize) % 12];
+
+            draw_ascii(display, 26, 224, dow_str, fg, bg, 1);
+
+            let mut date_buf = [b'0', b'0', b' ', b'J', b'A', b'N', b' ', b'2', b'0', b'2', b'6'];
+            date_buf[0] = (day / 10) + b'0';
+            date_buf[1] = (day % 10) + b'0';
+            date_buf[3] = mon_str[0];
+            date_buf[4] = mon_str[1];
+            date_buf[5] = mon_str[2];
+            draw_ascii(display, 64, 224, &date_buf, dim, bg, 1);
+
+            self.prev_temp1 = day;
+            self.prev_temp2 = month_and_dow;
         }
     }
 

@@ -376,6 +376,13 @@ function startTelemetryLoop() {
 
   setInterval(poll, 250);
   poll();
+
+  // Ensure high precision 500ms ticker for Clock Face seconds and colon blinking
+  setInterval(() => {
+    if (store.settings.face === 'clock') {
+      renderScreen();
+    }
+  }, 500);
 }
 
 /**

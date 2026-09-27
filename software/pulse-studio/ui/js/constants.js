@@ -10,6 +10,7 @@ export const AVAILABLE_FACES = [
   { id: 'thermal', faceId: 4, name: 'THERMAL',     short: 'TEMP'   },
   { id: 'minimal', faceId: 5, name: 'MINIMAL',     short: 'ONE'    },
   { id: 'network', faceId: 6, name: 'NETWORK',     short: 'NET'    },
+  { id: 'clock',   faceId: 7, name: 'CLOCK',       short: 'CLK'    },
 ];
 
 export const ACCENT_PALETTE = [

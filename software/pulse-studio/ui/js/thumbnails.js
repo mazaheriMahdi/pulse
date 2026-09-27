@@ -199,6 +199,39 @@ export function renderThumbnail(faceId, accentColor = '#ffffff') {
         </svg>
       `;
 
+    case 'clock':
+      return `
+        <svg viewBox="0 0 120 80" width="100%" height="100%" style="display:block;">
+          <!-- Top Header -->
+          <text x="10" y="14" fill="${accentColor}" font-family="monospace" font-size="6" font-weight="bold">CLOCK</text>
+          <text x="110" y="14" fill="${dimCol}" font-family="monospace" font-size="4" text-anchor="end">LOCAL · UTC+3:30</text>
+
+          <!-- Big Time -->
+          <text x="32" y="42" fill="${accentColor}" font-family="monospace" font-size="20" font-weight="900" letter-spacing="-1" text-anchor="middle">10</text>
+          <circle cx="48" cy="33" r="1.5" fill="#d71921"/>
+          <circle cx="48" cy="39" r="1.5" fill="#d71921"/>
+          <text x="64" y="42" fill="${accentColor}" font-family="monospace" font-size="20" font-weight="900" letter-spacing="-1" text-anchor="middle">42</text>
+          <text x="80" y="34" fill="${accentColor}" font-family="monospace" font-size="5" font-weight="bold">AM</text>
+          <text x="80" y="41" fill="#333333" font-family="monospace" font-size="5" font-weight="bold">PM</text>
+
+          <!-- Seconds dots row -->
+          <g transform="translate(10, 48)">
+            ${Array.from({ length: 30 }, (_, i) => `<circle cx="${i * 3.4 + 1}" cy="2" r="0.9" fill="${i === 14 ? '#d71921' : i < 14 ? '#3a3a3a' : dotOff}"/>`).join('')}
+          </g>
+
+          <!-- Footer -->
+          <line x1="8" y1="56" x2="112" y2="56" stroke="${lineCol}" stroke-width="1"/>
+          <text x="10" y="65" fill="${accentColor}" font-family="monospace" font-size="5" font-weight="bold">WED</text>
+          <text x="24" y="65" fill="${dimCol}" font-family="monospace" font-size="4.5">25 SEP 2026</text>
+          <text x="110" y="65" fill="${dimCol}" font-family="monospace" font-size="4.5" text-anchor="end">TIME <tspan fill="${accentColor}" font-weight="bold">42</tspan></text>
+
+          <!-- TE Ruler ticks -->
+          <g transform="translate(10, 70)">
+            ${Array.from({ length: 24 }, (_, i) => `<rect x="${i * 4.2}" y="${i % 4 === 0 ? 0 : 2}" width="1" height="${i % 4 === 0 ? 5 : 3}" fill="${i % 4 === 0 ? '#333333' : '#1e1e1e'}"/>`).join('')}
+          </g>
+        </svg>
+      `;
+
     case 'minimal':
     default:
       return `

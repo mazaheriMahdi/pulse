@@ -671,13 +671,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let bat = read_battery_percent();
         let (net_up, net_dn, peak_up, peak_dn, throughput_pct, iface) = net_sampler.sample();
 
-        let packet = if current_face_id == 6 {
+        let packet = if current_face_id == 7 {
+            use chrono::{Datelike, Local, Timelike};
+            let now = Local::now();
+            let hours = now.hour() as u8;
+            let minutes = now.minute() as u8;
+            let seconds = now.second() as u8;
+            let day = now.day() as u8;
+            let month = now.month() as u8;
+            let dow = now.weekday().num_days_from_sunday() as u8;
+            let month_and_dow = ((dow & 0x07) << 4) | (month & 0x0F);
+            let tz_offset_min = (now.offset().local_minus_utc() / 60) as i32;
+            let tz_byte = ((tz_offset_min / 15) + 128).clamp(0, 255) as u8;
+            TelemetryPacket::new(hours, minutes, seconds, day, month_and_dow, tz_byte)
+        } else if current_face_id == 6 {
             TelemetryPacket::new(net_up, peak_up, throughput_pct, net_dn, peak_dn, 100)
         } else {
             TelemetryPacket::new(cpu, cpu_temp, ram, gpu, gpu_temp, bat)
         };
 
-        if current_face_id == 6 {
+        if current_face_id == 7 {
+            use chrono::{Local, Timelike, Datelike};
+            let now = Local::now();
+            print!(
+                "\r[Clock] {:02}:{:02}:{:02} | {} {:02}/{:02}/{}",
+                now.hour(), now.minute(), now.second(), now.weekday(), now.day(), now.month(), now.year()
+            );
+        } else if current_face_id == 6 {
             print!(
                 "\r[Metrics:NET] UP: {:>2} MB/s (Peak {:>2}) | DN: {:>2} MB/s (Peak {:>2}) | Bar: {:>3}% | {}",
                 net_up, peak_up, net_dn, peak_dn, throughput_pct, iface

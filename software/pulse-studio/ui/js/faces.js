@@ -3,7 +3,7 @@
    Matches 480×320 Hardware TFT LCD pixel-for-pixel
    ============================================================ */
 
-import { renderNdot, renderDotBar } from './font.js';
+import { renderNdot, renderDotBar, renderDotLogo } from './font.js';
 
 /**
  * Format 2-digit number with leading zero if needed
@@ -410,6 +410,100 @@ export function renderNetwork(telemetry, settings) {
 }
 
 /**
+ * Clock Face (Nothing × Teenage Engineering Dot Matrix Clock)
+ */
+export function renderClock(telemetry, settings) {
+  const now = new Date();
+
+  // Extract from telemetry if clock packet provided, else use live system time
+  let h24 = now.getHours();
+  let m = now.getMinutes();
+  let s = now.getSeconds();
+  let dowIdx = now.getDay();
+  let day = now.getDate();
+  let monthIdx = now.getMonth();
+  let year = now.getFullYear();
+
+  if (telemetry && typeof telemetry.hours === 'number') {
+    h24 = telemetry.hours;
+    m = telemetry.minutes || 0;
+    s = telemetry.seconds || 0;
+    if (typeof telemetry.day === 'number') day = telemetry.day;
+    if (typeof telemetry.month === 'number') monthIdx = Math.max(0, telemetry.month - 1);
+    if (typeof telemetry.dow === 'number') dowIdx = telemetry.dow;
+  }
+
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const isAm = h24 < 12;
+
+  // Timezone offset
+  const off = -now.getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '−';
+  const oh = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+  const om = String(Math.abs(off) % 60).padStart(2, '0');
+  const tzText = `LOCAL · UTC${sign}${oh}:${om}`;
+
+  const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+  const dowStr = DOW[dowIdx % 7];
+  const dateStr = `${String(day).padStart(2, '0')} ${MON[monthIdx % 12]} ${year}`;
+  const secStr = String(s).padStart(2, '0');
+
+  // 60-dot seconds bar
+  let secondsDots = '';
+  for (let i = 0; i < 60; i++) {
+    let cls = '';
+    if (i % 5 === 0) cls = 'five';
+    if (i < s) cls = 'past';
+    else if (i === s) cls = 'now';
+    secondsDots += `<i class="${cls}"></i>`;
+  }
+
+  // 48-tick Teenage Engineering ruler
+  let rulerTicks = '';
+  for (let i = 0; i < 48; i++) {
+    const isTall = i % 6 === 0 ? 'tall' : '';
+    rulerTicks += `<i class="${isTall}"></i>`;
+  }
+
+  const showLabel = settings.label !== false;
+
+  return `
+    <div class="face-clock">
+      <div class="head">
+        <span class="title">${showLabel ? 'CLOCK' : ''}</span>
+        <span class="tz">${tzText}</span>
+      </div>
+
+      <div class="time">
+        <span class="grp">${renderDotLogo(String(h12).padStart(2, '0'), 18)}</span>
+        <span class="sep"><i></i><i></i></span>
+        <span class="grp">${renderDotLogo(String(m).padStart(2, '0'), 18)}</span>
+        <div class="meridiem">
+          <span class="${isAm ? 'on' : ''}">AM</span>
+          <span class="${!isAm ? 'on' : ''}">PM</span>
+        </div>
+      </div>
+
+      <div class="seconds">${secondsDots}</div>
+
+      <div class="foot">
+        <div class="day">
+          <span class="dow">${dowStr}</span>
+          <span class="date">${dateStr}</span>
+        </div>
+        <div class="meta">
+          <span>TIME <b>${secStr}</b></span>
+        </div>
+      </div>
+
+      <div class="ruler">${rulerTicks}</div>
+    </div>
+  `;
+}
+
+/**
  * Master face router
  */
 export function renderFace(faceId, settings, telemetry) {
@@ -427,6 +521,8 @@ export function renderFace(faceId, settings, telemetry) {
       return renderMinimal(telemetry, settings);
     case 'network':
       return renderNetwork(telemetry, settings);
+    case 'clock':
+      return renderClock(telemetry, settings);
     case 'dual':
     default:
       return renderDualLoad(telemetry, settings);
